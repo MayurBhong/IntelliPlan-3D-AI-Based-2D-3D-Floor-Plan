@@ -1,0 +1,20 @@
+# ═══════════════════════════════════════════════════════════════
+# IntelliPlan·3D — Backend Dependencies
+# Install:  pip install -r requirements.txt
+# ═══════════════════════════════════════════════════════════════
+
+# ── Web framework ───────────────────────────────────────────────
+Flask>=3.0.0
+
+# ── CORS (cross-origin requests from the frontend) ──────────────
+flask-cors>=4.0.0
+
+# ── Numerical computation (GA engine) ───────────────────────────
+numpy>=1.26.0
+
+# ── PDF generation (export_service) ─────────────────────────────
+reportlab>=4.0.0
+
+# ── Development / testing ────────────────────────────────────────
+# pytest>=8.0.0       # optional — tests run with plain python too
+# python-dotenv>=1.0  # optional — load .env automatically

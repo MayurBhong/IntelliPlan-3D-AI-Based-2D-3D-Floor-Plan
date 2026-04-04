@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IntelliPlan·3D — AI Floor Plan Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div class="blueprint-bg"></div>
+<div class="noise"></div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Running Genetic Algorithm</div>
+  <div class="loading-sub" id="loading-sub">Initialising population…</div>
+  <div class="loading-progress"><div class="loading-bar"></div></div>
+</div>
+
+<header>
+  <div class="logo-wrap" onclick="goToLanding()">
+    <div class="logo-mark">
+      <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="17,2 32,10 32,24 17,32 2,24 2,10" stroke="#38bdf8" stroke-width="1" fill="rgba(56,189,248,0.05)"/>
+        <polygon points="17,8 26,13 26,21 17,26 8,21 8,13" stroke="#c9962a" stroke-width="1" fill="rgba(201,150,42,0.08)"/>
+        <circle cx="17" cy="17" r="3" fill="#c9962a" opacity="0.9"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">IntelliPlan<span>·3D</span></div>
+      <div class="logo-tag">AI Floor Plan Studio</div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="nav-btn active" id="nav-landing" onclick="goToLanding()">Home</button>
+    <button class="nav-btn" id="nav-home" onclick="goToStudio()">Studio</button>
+    <button class="nav-btn" id="nav-results" onclick="navigate('results')">Results</button>
+    <button class="nav-btn" id="nav-ar" onclick="navigate('ar')">AR View</button>
+  </nav>
+  <div class="status-dot" id="status-dot"></div>
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" data-tooltip="Toggle Light Mode" aria-label="Toggle theme">
+    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE 00 — LANDING (default active)
+════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-landing">
+
+  <!-- ── HERO ─────────────────────────────────────────── -->
+  <section class="lp-hero">
+    <div class="lp-hero-glow lp-glow-1"></div>
+    <div class="lp-hero-glow lp-glow-2"></div>
+    <div class="lp-hero-glow lp-glow-3"></div>
+
+    <div class="lp-hero-inner">
+      <!-- Left: Text -->
+      <div class="lp-hero-left">
+        <div class="lp-eyebrow">
+          <span class="lp-eyebrow-dot"></span>
+          Vastu-Compliant AI Architecture
+          <span class="lp-eyebrow-dot"></span>
+        </div>
+        <h1 class="lp-h1">
+          Design Your<br/>
+          <em>Dream Home</em><br/>
+          <span class="lp-h1-sub">with Intelligence</span>
+        </h1>
+        <p class="lp-sub">
+          Genetic algorithm–powered floor plan generation with Vastu Shastra compliance scoring. Get 2D blueprints, 3D walkthroughs, and AR previews in seconds — for any plot size.
+        </p>
+        <div class="lp-hero-badges">
+          <div class="lp-badge"><span class="lp-badge-num">8+</span><span class="lp-badge-label">Vastu Rules</span></div>
+          <div class="lp-badge-sep"></div>
+          <div class="lp-badge"><span class="lp-badge-num">3</span><span class="lp-badge-label">AI Layouts</span></div>
+          <div class="lp-badge-sep"></div>
+          <div class="lp-badge"><span class="lp-badge-num">3D</span><span class="lp-badge-label">+ AR View</span></div>
+        </div>
+        <button class="lp-cta-btn" onclick="goToStudio()">
+          <span class="lp-cta-icon">✦</span>
+          Start Floor Plan
+          <svg class="lp-cta-arrow" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="lp-trust">
+          <span class="lp-trust-text">Powered by GA Engine</span>
+          <span class="lp-trust-sep">·</span>
+          <span class="lp-trust-text">No sign-up required</span>
+          <span class="lp-trust-sep">·</span>
+          <span class="lp-trust-text">Free to use</span>
+        </div>
+      </div>
+
+      <!-- Right: Floor Plan Illustration -->
+      <div class="lp-hero-right">
+        <div class="lp-floorplan-wrap">
+          <div class="lp-fp-badge">LIVE PREVIEW</div>
+          <svg class="lp-fp-svg" viewBox="0 0 340 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid lines -->
+            <defs>
+              <pattern id="fpgrid" width="17" height="13" patternUnits="userSpaceOnUse">
+                <path d="M 17 0 L 0 0 0 13" fill="none" stroke="rgba(56,189,248,0.07)" stroke-width="0.4"/>
+              </pattern>
+            </defs>
+            <rect x="28" y="22" width="294" height="220" fill="url(#fpgrid)"/>
+            <!-- Plot boundary -->
+            <rect x="28" y="22" width="294" height="220" stroke="rgba(56,189,248,0.5)" stroke-width="2.5" fill="rgba(4,15,31,0.4)" rx="1"/>
+            <!-- Corner marks -->
+            <path d="M28 22 L48 22 M28 22 L28 42" stroke="rgba(201,150,42,0.7)" stroke-width="1.5"/>
+            <path d="M322 22 L302 22 M322 22 L322 42" stroke="rgba(201,150,42,0.7)" stroke-width="1.5"/>
+            <path d="M28 242 L48 242 M28 242 L28 222" stroke="rgba(201,150,42,0.7)" stroke-width="1.5"/>
+            <path d="M322 242 L302 242 M322 242 L322 222" stroke="rgba(201,150,42,0.7)" stroke-width="1.5"/>
+            <!-- Living Room -->
+            <rect x="28" y="22" width="154" height="90" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.6)" stroke-width="1.5"/>
+            <text x="105" y="72" text-anchor="middle" fill="rgba(59,130,246,0.9)" font-size="9.5" font-family="JetBrains Mono,monospace" font-weight="600">LIVING ROOM</text>
+            <text x="105" y="84" text-anchor="middle" fill="rgba(59,130,246,0.5)" font-size="7" font-family="JetBrains Mono,monospace">19×18 ft</text>
+            <!-- Entrance -->
+            <rect x="182" y="22" width="80" height="26" fill="rgba(236,72,153,0.15)" stroke="rgba(236,72,153,0.5)" stroke-width="1.2"/>
+            <text x="222" y="38" text-anchor="middle" fill="rgba(236,72,153,0.8)" font-size="8" font-family="JetBrains Mono,monospace">ENTRANCE</text>
+            <!-- Pooja -->
+            <rect x="182" y="48" width="60" height="64" fill="rgba(249,115,22,0.15)" stroke="rgba(249,115,22,0.5)" stroke-width="1.2"/>
+            <text x="212" y="82" text-anchor="middle" fill="rgba(249,115,22,0.8)" font-size="8.5" font-family="JetBrains Mono,monospace">POOJA</text>
+            <!-- Bathroom -->
+            <rect x="242" y="48" width="40" height="34" fill="rgba(20,184,166,0.18)" stroke="rgba(20,184,166,0.6)" stroke-width="1.2"/>
+            <text x="262" y="68" text-anchor="middle" fill="rgba(20,184,166,0.8)" font-size="7" font-family="JetBrains Mono,monospace">BATH</text>
+            <!-- Toilet -->
+            <rect x="282" y="48" width="40" height="34" fill="rgba(6,182,212,0.18)" stroke="rgba(6,182,212,0.6)" stroke-width="1.2"/>
+            <text x="302" y="68" text-anchor="middle" fill="rgba(6,182,212,0.8)" font-size="7" font-family="JetBrains Mono,monospace">WC</text>
+            <!-- Dining -->
+            <rect x="28" y="112" width="120" height="76" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.5)" stroke-width="1.5"/>
+            <text x="88" y="152" text-anchor="middle" fill="rgba(234,179,8,0.9)" font-size="9" font-family="JetBrains Mono,monospace" font-weight="600">DINING</text>
+            <text x="88" y="164" text-anchor="middle" fill="rgba(234,179,8,0.5)" font-size="7" font-family="JetBrains Mono,monospace">14×15 ft</text>
+            <!-- Kitchen -->
+            <rect x="148" y="112" width="174" height="76" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.5)" stroke-width="1.5"/>
+            <text x="235" y="152" text-anchor="middle" fill="rgba(245,158,11,0.9)" font-size="9" font-family="JetBrains Mono,monospace" font-weight="600">KITCHEN</text>
+            <text x="235" y="164" text-anchor="middle" fill="rgba(245,158,11,0.5)" font-size="7" font-family="JetBrains Mono,monospace">26×15 ft</text>
+            <!-- Master Bedroom -->
+            <rect x="28" y="188" width="120" height="74" fill="rgba(139,92,246,0.18)" stroke="rgba(139,92,246,0.6)" stroke-width="1.5"/>
+            <text x="88" y="225" text-anchor="middle" fill="rgba(139,92,246,0.9)" font-size="8.5" font-family="JetBrains Mono,monospace" font-weight="600">MASTER BED</text>
+            <text x="88" y="237" text-anchor="middle" fill="rgba(139,92,246,0.5)" font-size="7" font-family="JetBrains Mono,monospace">14×22 ft</text>
+            <!-- Bedroom 2 -->
+            <rect x="148" y="188" width="100" height="74" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.5)" stroke-width="1.5"/>
+            <text x="198" y="228" text-anchor="middle" fill="rgba(99,102,241,0.9)" font-size="8.5" font-family="JetBrains Mono,monospace" font-weight="600">BEDROOM 2</text>
+            <!-- Bedroom 3 -->
+            <rect x="248" y="188" width="74" height="74" fill="rgba(99,102,241,0.12)" stroke="rgba(99,102,241,0.4)" stroke-width="1.2"/>
+            <text x="285" y="228" text-anchor="middle" fill="rgba(99,102,241,0.8)" font-size="8" font-family="JetBrains Mono,monospace" font-weight="600">BED 3</text>
+            <!-- Door symbols -->
+            <path d="M28 138 Q48 138 48 158" stroke="rgba(201,150,42,0.6)" stroke-width="1.2" fill="none"/>
+            <line x1="28" y1="138" x2="28" y2="158" stroke="rgba(201,150,42,0.6)" stroke-width="1.2"/>
+            <path d="M148 188 Q168 188 168 208" stroke="rgba(201,150,42,0.6)" stroke-width="1.2" fill="none"/>
+            <line x1="148" y1="188" x2="148" y2="208" stroke="rgba(201,150,42,0.6)" stroke-width="1.2"/>
+            <!-- Dimension lines -->
+            <line x1="28" y1="12" x2="322" y2="12" stroke="rgba(201,150,42,0.4)" stroke-width="0.8"/>
+            <line x1="28" y1="9" x2="28" y2="15" stroke="rgba(201,150,42,0.4)" stroke-width="0.8"/>
+            <line x1="322" y1="9" x2="322" y2="15" stroke="rgba(201,150,42,0.4)" stroke-width="0.8"/>
+            <text x="175" y="10" text-anchor="middle" fill="rgba(201,150,42,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">40'-0"</text>
+            <line x1="16" y1="22" x2="16" y2="242" stroke="rgba(201,150,42,0.4)" stroke-width="0.8"/>
+            <line x1="13" y1="22" x2="19" y2="22" stroke="rgba(201,150,42,0.4)" stroke-width="0.8"/>
+            <line x1="13" y1="242" x2="19" y2="242" stroke="rgba(201,150,42,0.4)" stroke-width="0.8"/>
+            <text x="9" y="135" text-anchor="middle" fill="rgba(201,150,42,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace" transform="rotate(-90,9,135)">60'-0"</text>
+            <!-- Compass -->
+            <circle cx="308" cy="42" r="14" stroke="rgba(56,189,248,0.3)" stroke-width="1" fill="rgba(2,11,24,0.85)"/>
+            <polygon points="308,30 311,42 308,46 305,42" fill="#f87171" opacity="0.9"/>
+            <polygon points="308,54 311,42 308,38 305,42" fill="rgba(148,163,184,0.3)"/>
+            <circle cx="308" cy="42" r="2.5" fill="#d9aa3f"/>
+            <text x="308" y="29" text-anchor="middle" fill="#f87171" font-size="6" font-family="JetBrains Mono,monospace" font-weight="700">N</text>
+            <!-- Scale bar -->
+            <line x1="28" y1="252" x2="79" y2="252" stroke="rgba(201,150,42,0.5)" stroke-width="1.2"/>
+            <line x1="28" y1="249" x2="28" y2="255" stroke="rgba(201,150,42,0.5)" stroke-width="1.2"/>
+            <line x1="79" y1="249" x2="79" y2="255" stroke="rgba(201,150,42,0.5)" stroke-width="1.2"/>
+            <text x="53" y="260" text-anchor="middle" fill="rgba(201,150,42,0.6)" font-size="7" font-family="JetBrains Mono,monospace">10 FT</text>
+            <!-- Label -->
+            <text x="28" y="18" fill="rgba(56,189,248,0.5)" font-size="7" font-family="JetBrains Mono,monospace">FLOOR PLAN · 3BHK · 40×60 ft</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── KEY FEATURES INTRO ─────────────────────────── -->
+  <section class="lp-kf-intro">
+    <div class="lp-section-eyebrow">✦ Capabilities</div>
+    <h2 class="lp-section-title">Powerful Features for<br/><em>Perfect Homes</em></h2>
+    <p class="lp-section-sub">Everything you need to go from idea to a fully visualized, Vastu-compliant floor plan — in minutes, not months.</p>
+    <div class="lp-kf-pills">
+      <span class="lp-kf-pill">📐 2D Blueprint</span>
+      <span class="lp-kf-pill">🏠 3D Model</span>
+      <span class="lp-kf-pill">🔮 AR Preview</span>
+      <span class="lp-kf-pill">🪔 Vastu Engine</span>
+      <span class="lp-kf-pill">📄 PDF Export</span>
+    </div>
+  </section>
+
+  <!-- ── ZIGZAG FEATURES ────────────────────────────── -->
+  <section class="lp-zigzag">
+
+    <!-- Feature 1: Custom Plot Size — Visual LEFT, Text RIGHT -->
+    <div class="lp-zig-row">
+      <div class="lp-zig-visual">
+        <div class="lp-feat-card lp-feat-card--plot">
+          <div class="lp-feat-card-label">PLOT CONFIGURATOR</div>
+          <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="plotgrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(56,189,248,0.1)" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect x="10" y="10" width="280" height="180" fill="url(#plotgrid)"/>
+            <!-- Custom plot rectangle -->
+            <rect x="40" y="35" width="180" height="130" fill="rgba(56,189,248,0.08)" stroke="rgba(56,189,248,0.6)" stroke-width="2" stroke-dasharray="6,3"/>
+            <!-- Another plot option -->
+            <rect x="230" y="35" width="48" height="80" fill="rgba(201,150,42,0.08)" stroke="rgba(201,150,42,0.4)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <!-- Width dimension arrow -->
+            <line x1="40" y1="24" x2="220" y2="24" stroke="rgba(201,150,42,0.7)" stroke-width="1.2"/>
+            <polygon points="40,24 48,20 48,28" fill="rgba(201,150,42,0.7)"/>
+            <polygon points="220,24 212,20 212,28" fill="rgba(201,150,42,0.7)"/>
+            <rect x="110" y="16" width="60" height="16" fill="rgba(2,11,24,0.9)" rx="2"/>
+            <text x="140" y="27" text-anchor="middle" fill="#d9aa3f" font-size="9" font-family="JetBrains Mono,monospace" font-weight="600">W: 40 ft</text>
+            <!-- Height dimension arrow -->
+            <line x1="229" y1="35" x2="229" y2="165" stroke="rgba(201,150,42,0.7)" stroke-width="1.2"/>
+            <polygon points="229,35 225,43 233,43" fill="rgba(201,150,42,0.7)"/>
+            <polygon points="229,165 225,157 233,157" fill="rgba(201,150,42,0.7)"/>
+            <rect x="232" y="88" width="52" height="16" fill="rgba(2,11,24,0.9)" rx="2"/>
+            <text x="258" y="99" text-anchor="middle" fill="#d9aa3f" font-size="9" font-family="JetBrains Mono,monospace" font-weight="600">H: 60 ft</text>
+            <!-- Input boxes -->
+            <rect x="40" y="155" width="60" height="20" fill="rgba(7,21,41,0.9)" stroke="rgba(56,189,248,0.4)" stroke-width="1" rx="2"/>
+            <text x="50" y="168" fill="rgba(56,189,248,0.7)" font-size="7" font-family="JetBrains Mono,monospace">W</text>
+            <text x="72" y="168" fill="#e2e8f0" font-size="8" font-family="JetBrains Mono,monospace" font-weight="500">40</text>
+            <rect x="110" y="155" width="60" height="20" fill="rgba(7,21,41,0.9)" stroke="rgba(201,150,42,0.4)" stroke-width="1" rx="2"/>
+            <text x="120" y="168" fill="rgba(201,150,42,0.7)" font-size="7" font-family="JetBrains Mono,monospace">H</text>
+            <text x="142" y="168" fill="#e2e8f0" font-size="8" font-family="JetBrains Mono,monospace" font-weight="500">60</text>
+            <text x="183" y="168" fill="rgba(148,163,184,0.6)" font-size="8" font-family="JetBrains Mono,monospace">= 2400 sqft</text>
+            <!-- Area badge -->
+            <rect x="40" y="75" width="90" height="24" fill="rgba(201,150,42,0.15)" stroke="rgba(201,150,42,0.4)" stroke-width="1" rx="3"/>
+            <text x="85" y="90" text-anchor="middle" fill="#d9aa3f" font-size="9" font-family="JetBrains Mono,monospace" font-weight="600">✓ CUSTOM SIZE</text>
+          </svg>
+        </div>
+      </div>
+      <div class="lp-zig-text">
+        <div class="lp-feat-num">01</div>
+        <h3 class="lp-feat-title">Support Custom Plot Size</h3>
+        <p class="lp-feat-desc">Enter any plot dimensions between 10–200 ft. Our GA engine adapts the floor plan layout to perfectly fit your land — no matter the shape or size. Standard presets also available for quick generation.</p>
+        <ul class="lp-feat-points">
+          <li>Any width × height in feet</li>
+          <li>Live area preview as you type</li>
+          <li>Presets: 30×40, 40×60, 50×80 & more</li>
+          <li>Adapts all room proportions automatically</li>
+        </ul>
+        <button class="lp-feat-btn" onclick="goToStudio()">Try Custom Size →</button>
+      </div>
+    </div>
+
+    <!-- Feature 2: Vastu Analysis — Text LEFT, Visual RIGHT -->
+    <div class="lp-zig-row lp-zig-reverse">
+      <div class="lp-zig-text">
+        <div class="lp-feat-num">02</div>
+        <h3 class="lp-feat-title">Vastu Analysis Engine</h3>
+        <p class="lp-feat-desc">Every generated layout is evaluated against 8 core Vastu Shastra rules — from kitchen placement to master bedroom orientation. Get a real-time compliance score and detailed rule breakdown.</p>
+        <ul class="lp-feat-points">
+          <li>8 Vastu rules evaluated automatically</li>
+          <li>Per-rule compliance: OK / Fair / Fail</li>
+          <li>Weighted fitness score (0–100%)</li>
+          <li>Direction-aware placement logic</li>
+        </ul>
+        <button class="lp-feat-btn" onclick="goToStudio()">See Vastu Analysis →</button>
+      </div>
+      <div class="lp-zig-visual">
+        <div class="lp-feat-card lp-feat-card--vastu">
+          <div class="lp-feat-card-label">VASTU ANALYSIS</div>
+          <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Score ring -->
+            <circle cx="85" cy="100" r="55" stroke="rgba(7,21,41,0.9)" stroke-width="10" fill="none"/>
+            <circle cx="85" cy="100" r="55" stroke="url(#vastuGrad)" stroke-width="10" fill="none"
+              stroke-linecap="round" transform="rotate(-90 85 100)"
+              stroke-dasharray="345.4" stroke-dashoffset="95"/>
+            <defs>
+              <linearGradient id="vastuGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#c9962a"/>
+              </linearGradient>
+            </defs>
+            <text x="85" y="93" text-anchor="middle" fill="#ffffff" font-size="22" font-family="DM Serif Display,serif" font-weight="700">72</text>
+            <text x="85" y="108" text-anchor="middle" fill="#38bdf8" font-size="9" font-family="JetBrains Mono,monospace">/ 100</text>
+            <text x="85" y="120" text-anchor="middle" fill="rgba(148,163,184,0.7)" font-size="7" font-family="JetBrains Mono,monospace">VASTU SCORE</text>
+            <!-- Compass directions -->
+            <text x="85" y="36" text-anchor="middle" fill="#f87171" font-size="9" font-family="JetBrains Mono,monospace" font-weight="700">N</text>
+            <text x="149" y="103" text-anchor="middle" fill="rgba(148,163,184,0.5)" font-size="8" font-family="JetBrains Mono,monospace">E</text>
+            <text x="85" y="166" text-anchor="middle" fill="rgba(148,163,184,0.5)" font-size="8" font-family="JetBrains Mono,monospace">S</text>
+            <text x="22" y="103" text-anchor="middle" fill="rgba(148,163,184,0.5)" font-size="8" font-family="JetBrains Mono,monospace">W</text>
+            <!-- Rule bars on the right -->
+            <text x="165" y="35" fill="rgba(56,189,248,0.8)" font-size="8" font-family="JetBrains Mono,monospace" font-weight="600">RULE COMPLIANCE</text>
+            <!-- Rules -->
+            <text x="165" y="56" fill="rgba(148,163,184,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">Kitchen (SE/NW)</text>
+            <rect x="165" y="60" width="110" height="5" fill="rgba(7,21,41,0.8)" rx="2"/>
+            <rect x="165" y="60" width="110" height="5" fill="#4ade80" rx="2"/>
+            <text x="280" y="65" fill="#4ade80" font-size="7" font-family="JetBrains Mono,monospace">✓</text>
+            <text x="165" y="82" fill="rgba(148,163,184,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">Master Bed (SW)</text>
+            <rect x="165" y="86" width="110" height="5" fill="rgba(7,21,41,0.8)" rx="2"/>
+            <rect x="165" y="86" width="65" height="5" fill="#fbbf24" rx="2"/>
+            <text x="280" y="91" fill="#fbbf24" font-size="7" font-family="JetBrains Mono,monospace">~</text>
+            <text x="165" y="108" fill="rgba(148,163,184,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">Living Room (N/E)</text>
+            <rect x="165" y="112" width="110" height="5" fill="rgba(7,21,41,0.8)" rx="2"/>
+            <rect x="165" y="112" width="110" height="5" fill="#4ade80" rx="2"/>
+            <text x="280" y="117" fill="#4ade80" font-size="7" font-family="JetBrains Mono,monospace">✓</text>
+            <text x="165" y="134" fill="rgba(148,163,184,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">Pooja Room (NE)</text>
+            <rect x="165" y="138" width="110" height="5" fill="rgba(7,21,41,0.8)" rx="2"/>
+            <rect x="165" y="138" width="65" height="5" fill="#fbbf24" rx="2"/>
+            <text x="280" y="143" fill="#fbbf24" font-size="7" font-family="JetBrains Mono,monospace">~</text>
+            <text x="165" y="160" fill="rgba(148,163,184,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">Entrance (N/E)</text>
+            <rect x="165" y="164" width="110" height="5" fill="rgba(7,21,41,0.8)" rx="2"/>
+            <rect x="165" y="164" width="110" height="5" fill="#4ade80" rx="2"/>
+            <text x="280" y="169" fill="#4ade80" font-size="7" font-family="JetBrains Mono,monospace">✓</text>
+            <text x="165" y="186" fill="rgba(148,163,184,0.7)" font-size="7.5" font-family="JetBrains Mono,monospace">Bathroom (NW/SE)</text>
+            <rect x="165" y="190" width="110" height="5" fill="rgba(7,21,41,0.8)" rx="2"/>
+            <rect x="165" y="190" width="44" height="5" fill="#fbbf24" rx="2"/>
+            <text x="280" y="195" fill="#fbbf24" font-size="7" font-family="JetBrains Mono,monospace">~</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: AR View — Visual LEFT, Text RIGHT -->
+    <div class="lp-zig-row">
+      <div class="lp-zig-visual">
+        <div class="lp-feat-card lp-feat-card--ar">
+          <div class="lp-feat-card-label">AR · 3D VIEWER</div>
+          <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Dark 3D scene background -->
+            <rect x="0" y="0" width="300" height="200" fill="rgba(2,11,24,0.95)" rx="4"/>
+            <!-- Grid floor -->
+            <defs>
+              <pattern id="argrid" width="15" height="15" patternUnits="userSpaceOnUse">
+                <path d="M 15 0 L 0 0 0 15" fill="none" stroke="rgba(7,21,41,0.9)" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <ellipse cx="150" cy="170" rx="130" ry="25" fill="url(#argrid)" stroke="rgba(56,189,248,0.1)" stroke-width="0.5"/>
+            <!-- 3D Rooms - isometric perspective -->
+            <!-- Living room box -->
+            <path d="M60 140 L60 80 L130 60 L130 120 Z" fill="rgba(59,130,246,0.25)" stroke="rgba(59,130,246,0.6)" stroke-width="1.2"/>
+            <path d="M60 140 L130 120 L185 140 L115 160 Z" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.4)" stroke-width="1"/>
+            <path d="M130 60 L130 120 L185 140 L185 80 Z" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.35)" stroke-width="1"/>
+            <!-- Top face -->
+            <path d="M60 80 L130 60 L185 80 L115 100 Z" fill="rgba(59,130,246,0.35)" stroke="rgba(59,130,246,0.7)" stroke-width="1.2"/>
+            <text x="122" y="92" text-anchor="middle" fill="rgba(59,130,246,0.9)" font-size="7" font-family="JetBrains Mono,monospace">LIVING</text>
+            <!-- Bedroom box -->
+            <path d="M185 140 L185 80 L230 65 L230 125 Z" fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.5)" stroke-width="1"/>
+            <path d="M185 140 L230 125 L265 140 L220 155 Z" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.35)" stroke-width="0.8"/>
+            <path d="M185 80 L230 65 L265 80 L220 95 Z" fill="rgba(139,92,246,0.3)" stroke="rgba(139,92,246,0.6)" stroke-width="1"/>
+            <text x="225" y="86" text-anchor="middle" fill="rgba(139,92,246,0.9)" font-size="6.5" font-family="JetBrains Mono,monospace">BED</text>
+            <!-- Kitchen box front-right -->
+            <path d="M115 160 L185 140 L185 175 L115 195 Z" fill="rgba(245,158,11,0.18)" stroke="rgba(245,158,11,0.4)" stroke-width="1"/>
+            <path d="M185 140 L220 155 L220 185 L185 175 Z" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.3)" stroke-width="0.8"/>
+            <text x="152" y="172" text-anchor="middle" fill="rgba(245,158,11,0.8)" font-size="6.5" font-family="JetBrains Mono,monospace">KITCHEN</text>
+            <!-- Lighting glow -->
+            <circle cx="150" cy="30" r="20" fill="rgba(56,189,248,0.08)"/>
+            <circle cx="150" cy="30" r="10" fill="rgba(201,150,42,0.12)"/>
+            <!-- Compass -->
+            <circle cx="270" cy="35" r="18" stroke="rgba(56,189,248,0.3)" stroke-width="1" fill="rgba(2,11,24,0.9)"/>
+            <polygon points="270,20 273,35 270,39 267,35" fill="#f87171" opacity="0.9"/>
+            <polygon points="270,50 273,35 270,31 267,35" fill="rgba(148,163,184,0.3)"/>
+            <circle cx="270" cy="35" r="2.5" fill="#d9aa3f"/>
+            <text x="270" y="19" text-anchor="middle" fill="#f87171" font-size="7" font-family="JetBrains Mono,monospace" font-weight="700">N</text>
+            <!-- Controls hint -->
+            <rect x="10" y="10" width="80" height="14" fill="rgba(4,15,31,0.8)" rx="2"/>
+            <text x="50" y="20" text-anchor="middle" fill="rgba(56,189,248,0.6)" font-size="6.5" font-family="JetBrains Mono,monospace">Drag · Zoom · Rotate</text>
+            <!-- Hover label -->
+            <rect x="65" y="55" width="52" height="18" fill="rgba(2,11,24,0.9)" stroke="rgba(59,130,246,0.5)" stroke-width="1" rx="2"/>
+            <text x="91" y="67" text-anchor="middle" fill="#e2e8f0" font-size="7.5" font-family="JetBrains Mono,monospace">LIVING RM</text>
+          </svg>
+        </div>
+      </div>
+      <div class="lp-zig-text">
+        <div class="lp-feat-num">03</div>
+        <h3 class="lp-feat-title">Immersive AR View</h3>
+        <p class="lp-feat-desc">Step inside your floor plan with our WebXR-powered immersive 3D viewer. Orbit, zoom, and pan through every room. Toggle wireframe mode, explode view, or switch lighting scenes.</p>
+        <ul class="lp-feat-points">
+          <li>Full orbit controls (mouse + touch)</li>
+          <li>Day / Dusk / Night lighting modes</li>
+          <li>Room detail panel on double-click</li>
+          <li>Screenshot export &amp; fullscreen</li>
+        </ul>
+        <button class="lp-feat-btn" onclick="goToStudio()">Launch AR View →</button>
+      </div>
+    </div>
+
+    <!-- Feature 4: 3D View — Text LEFT, Visual RIGHT -->
+    <div class="lp-zig-row lp-zig-reverse">
+      <div class="lp-zig-text">
+        <div class="lp-feat-num">04</div>
+        <h3 class="lp-feat-title">Real-Time 3D Model</h3>
+        <p class="lp-feat-desc">Instantly visualize your floor plan as a full 3D architectural model with Three.js rendering. Each room is color-coded, properly scaled, and rendered with realistic shadows and lighting.</p>
+        <ul class="lp-feat-points">
+          <li>Three.js WebGL renderer</li>
+          <li>Color-coded room volumes</li>
+          <li>Transparent roof slabs</li>
+          <li>Auto-sized to your plot dimensions</li>
+        </ul>
+        <button class="lp-feat-btn" onclick="goToStudio()">View 3D Model →</button>
+      </div>
+      <div class="lp-zig-visual">
+        <div class="lp-feat-card lp-feat-card--3d">
+          <div class="lp-feat-card-label">3D MODEL</div>
+          <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="300" height="200" fill="rgba(2,11,24,0.95)" rx="4"/>
+            <!-- Perspective grid floor -->
+            <defs>
+              <pattern id="grid3d" width="18" height="18" patternUnits="userSpaceOnUse">
+                <path d="M 18 0 L 0 0 0 18" fill="none" stroke="rgba(7,21,41,0.95)" stroke-width="0.6"/>
+              </pattern>
+            </defs>
+            <rect x="0" y="120" width="300" height="80" fill="url(#grid3d)"/>
+            <!-- Large living room box -->
+            <path d="M30 130 L30 60 L115 38 L115 108 Z" fill="rgba(59,130,246,0.3)" stroke="rgba(59,130,246,0.7)" stroke-width="1.5"/>
+            <path d="M30 130 L115 108 L175 130 L90 152 Z" fill="rgba(59,130,246,0.2)" stroke="rgba(59,130,246,0.5)" stroke-width="1.2"/>
+            <path d="M115 38 L115 108 L175 130 L175 60 Z" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1"/>
+            <!-- Top transparent slab -->
+            <path d="M30 60 L115 38 L175 60 L90 82 Z" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.7)" stroke-width="1.2" stroke-dasharray="4,2"/>
+            <text x="100" y="76" text-anchor="middle" fill="rgba(59,130,246,0.95)" font-size="8" font-family="JetBrains Mono,monospace" font-weight="600">LIVING</text>
+            <!-- Master bedroom -->
+            <path d="M175 130 L175 60 L230 44 L230 114 Z" fill="rgba(139,92,246,0.25)" stroke="rgba(139,92,246,0.6)" stroke-width="1.2"/>
+            <path d="M175 130 L230 114 L270 130 L215 146 Z" fill="rgba(139,92,246,0.18)" stroke="rgba(139,92,246,0.45)" stroke-width="1"/>
+            <path d="M230 44 L230 114 L270 130 L270 60 Z" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.35)" stroke-width="0.8"/>
+            <path d="M175 60 L230 44 L270 60 L215 76 Z" fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.6)" stroke-width="1" stroke-dasharray="4,2"/>
+            <text x="222" y="72" text-anchor="middle" fill="rgba(139,92,246,0.95)" font-size="7" font-family="JetBrains Mono,monospace" font-weight="600">MASTER</text>
+            <!-- Kitchen row -->
+            <path d="M90 152 L175 130 L175 155 L90 177 Z" fill="rgba(245,158,11,0.22)" stroke="rgba(245,158,11,0.5)" stroke-width="1"/>
+            <path d="M175 130 L215 146 L215 170 L175 155 Z" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.4)" stroke-width="0.8"/>
+            <text x="132" y="167" text-anchor="middle" fill="rgba(245,158,11,0.9)" font-size="7.5" font-family="JetBrains Mono,monospace">KITCHEN</text>
+            <!-- Light source -->
+            <circle cx="150" cy="20" r="14" fill="rgba(255,200,100,0.05)" stroke="rgba(255,200,100,0.2)" stroke-width="0.8"/>
+            <circle cx="150" cy="20" r="6" fill="rgba(255,200,100,0.15)"/>
+            <!-- Shadow/rays -->
+            <line x1="150" y1="34" x2="100" y2="80" stroke="rgba(255,200,100,0.04)" stroke-width="12"/>
+            <line x1="150" y1="34" x2="200" y2="80" stroke="rgba(255,200,100,0.04)" stroke-width="12"/>
+            <!-- Fog overlay at bottom -->
+            <rect x="0" y="155" width="300" height="45" fill="url(#fogGrad)"/>
+            <defs>
+              <linearGradient id="fogGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="transparent"/>
+                <stop offset="100%" stop-color="rgba(2,11,24,0.6)"/>
+              </linearGradient>
+            </defs>
+            <!-- Scene info -->
+            <rect x="10" y="10" width="60" height="14" fill="rgba(4,15,31,0.8)" rx="2"/>
+            <text x="40" y="20" text-anchor="middle" fill="rgba(201,150,42,0.7)" font-size="6.5" font-family="JetBrains Mono,monospace">☀ DAY MODE</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── WHY USE SECTION ────────────────────────────── -->
+  <section class="lp-why">
+    <div class="lp-why-inner">
+      <div class="lp-section-eyebrow">✦ Why Choose Us</div>
+      <h2 class="lp-section-title">Why Use Our Online<br/><em>Floor Plan?</em></h2>
+      <p class="lp-section-sub">Built for Indian homes with Vastu intelligence. Free, instant, and no architecture degree needed.</p>
+
+      <div class="lp-why-grid">
+        <!-- 1 -->
+        <div class="lp-why-card">
+          <div class="lp-why-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <circle cx="20" cy="20" r="18" stroke="rgba(56,189,248,0.3)" stroke-width="1.5" fill="rgba(56,189,248,0.06)"/>
+              <circle cx="20" cy="20" r="12" stroke="rgba(201,150,42,0.4)" stroke-width="1" fill="none"/>
+              <circle cx="20" cy="20" r="3" fill="#d9aa3f"/>
+              <line x1="20" y1="8" x2="20" y2="13" stroke="#f87171" stroke-width="1.5"/>
+              <line x1="20" y1="27" x2="20" y2="32" stroke="rgba(148,163,184,0.5)" stroke-width="1.2"/>
+              <line x1="8" y1="20" x2="13" y2="20" stroke="rgba(148,163,184,0.5)" stroke-width="1.2"/>
+              <line x1="27" y1="20" x2="32" y2="20" stroke="rgba(148,163,184,0.5)" stroke-width="1.2"/>
+            </svg>
+          </div>
+          <div class="lp-why-content">
+            <div class="lp-why-title">Vastu Score Calculation</div>
+            <div class="lp-why-desc">Every layout is scored against 8 Vastu Shastra rules with direction-aware placement for kitchen, master bedroom, pooja room and more.</div>
+          </div>
+        </div>
+        <!-- 2 -->
+        <div class="lp-why-card">
+          <div class="lp-why-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect x="5" y="12" width="30" height="20" rx="2" stroke="rgba(201,150,42,0.4)" stroke-width="1.5" fill="rgba(201,150,42,0.06)"/>
+              <rect x="8" y="16" width="24" height="3" rx="1" fill="rgba(74,222,128,0.6)"/>
+              <rect x="8" y="22" width="18" height="3" rx="1" fill="rgba(251,191,36,0.6)"/>
+              <rect x="8" y="28" width="10" height="3" rx="1" fill="rgba(248,113,113,0.6)"/>
+              <circle cx="32" cy="10" r="5" fill="rgba(56,189,248,0.2)" stroke="rgba(56,189,248,0.5)" stroke-width="1"/>
+              <text x="32" y="13" text-anchor="middle" fill="rgba(56,189,248,0.9)" font-size="6" font-family="monospace" font-weight="700">GA</text>
+            </svg>
+          </div>
+          <div class="lp-why-content">
+            <div class="lp-why-title">Fitness Score Optimization</div>
+            <div class="lp-why-desc">Our Genetic Algorithm evolves layouts over 30 generations, optimizing a multi-objective fitness function for space utilization, adjacency, and Vastu compliance.</div>
+          </div>
+        </div>
+        <!-- 3 -->
+        <div class="lp-why-card">
+          <div class="lp-why-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect x="5" y="8" width="30" height="24" rx="2" stroke="rgba(56,189,248,0.4)" stroke-width="1.5" fill="rgba(56,189,248,0.06)" stroke-dasharray="4,2"/>
+              <line x1="5" y1="18" x2="3" y2="18" stroke="rgba(201,150,42,0.6)" stroke-width="1.2"/>
+              <polygon points="5,18 3,16 3,20" fill="rgba(201,150,42,0.6)"/>
+              <line x1="35" y1="18" x2="37" y2="18" stroke="rgba(201,150,42,0.6)" stroke-width="1.2"/>
+              <polygon points="35,18 37,16 37,20" fill="rgba(201,150,42,0.6)"/>
+              <line x1="20" y1="8" x2="20" y2="6" stroke="rgba(201,150,42,0.6)" stroke-width="1.2"/>
+              <polygon points="20,8 18,6 22,6" fill="rgba(201,150,42,0.6)"/>
+              <text x="20" y="22" text-anchor="middle" fill="rgba(56,189,248,0.9)" font-size="6" font-family="monospace">40 × 60</text>
+              <text x="20" y="28" text-anchor="middle" fill="rgba(201,150,42,0.7)" font-size="5.5" font-family="monospace">CUSTOM SIZE</text>
+            </svg>
+          </div>
+          <div class="lp-why-content">
+            <div class="lp-why-title">Custom Plot Size Support</div>
+            <div class="lp-why-desc">Enter any dimensions from 10×10 to 200×200 ft. The GA engine automatically adapts all room proportions to perfectly fit your land parcel.</div>
+          </div>
+        </div>
+        <!-- 4 -->
+        <div class="lp-why-card">
+          <div class="lp-why-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <!-- Isometric cube -->
+              <path d="M20 8 L32 14 L32 26 L20 32 L8 26 L8 14 Z" stroke="rgba(139,92,246,0.5)" stroke-width="1.2" fill="rgba(139,92,246,0.08)"/>
+              <path d="M8 14 L20 20 L32 14" stroke="rgba(139,92,246,0.4)" stroke-width="1"/>
+              <line x1="20" y1="20" x2="20" y2="32" stroke="rgba(139,92,246,0.4)" stroke-width="1"/>
+              <circle cx="20" cy="20" r="2.5" fill="rgba(201,150,42,0.8)"/>
+            </svg>
+          </div>
+          <div class="lp-why-content">
+            <div class="lp-why-title">3D Visualization</div>
+            <div class="lp-why-desc">Instantly see your floor plan as a Three.js 3D model with color-coded rooms, realistic lighting, shadows, and interactive orbit controls.</div>
+          </div>
+        </div>
+        <!-- 5 -->
+        <div class="lp-why-card">
+          <div class="lp-why-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect x="8" y="12" width="24" height="18" rx="3" stroke="rgba(56,189,248,0.5)" stroke-width="1.5" fill="rgba(56,189,248,0.07)"/>
+              <rect x="12" y="15" width="16" height="10" rx="1.5" fill="rgba(56,189,248,0.15)"/>
+              <circle cx="14" cy="20" r="2.5" fill="rgba(59,130,246,0.6)" stroke="rgba(59,130,246,0.8)" stroke-width="0.8"/>
+              <path d="M18 17 L22 20 L18 23 Z" fill="rgba(245,158,11,0.6)"/>
+              <rect x="16" y="30" width="8" height="3" rx="1" fill="rgba(56,189,248,0.3)"/>
+              <line x1="20" y1="33" x2="20" y2="36" stroke="rgba(56,189,248,0.4)" stroke-width="1.2"/>
+              <rect x="12" y="35" width="16" height="3" rx="1" fill="rgba(56,189,248,0.2)"/>
+              <!-- AR rays -->
+              <path d="M6 15 Q4 20 6 25" stroke="rgba(56,189,248,0.4)" stroke-width="1" fill="none"/>
+              <path d="M34 15 Q36 20 34 25" stroke="rgba(56,189,248,0.4)" stroke-width="1" fill="none"/>
+            </svg>
+          </div>
+          <div class="lp-why-content">
+            <div class="lp-why-title">AR Immersive View</div>
+            <div class="lp-why-desc">Walk through your floor plan with our WebXR-style immersive 3D viewer. Includes explode view, wireframe toggle, lighting modes, and room details on click.</div>
+          </div>
+        </div>
+        <!-- 6 -->
+        <div class="lp-why-card">
+          <div class="lp-why-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <!-- 3 layout cards -->
+              <rect x="5" y="10" width="11" height="14" rx="1.5" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.5)" stroke-width="1.2"/>
+              <rect x="5" y="11" width="11" height="4" fill="rgba(59,130,246,0.2)"/>
+              <rect x="5" y="16" width="5" height="7" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="0.5"/>
+              <text x="10" y="11.5" text-anchor="middle" fill="rgba(59,130,246,0.9)" font-size="4" font-family="monospace" font-weight="700">72%</text>
+              <!-- Layout 2 -->
+              <rect x="15" y="8" width="12" height="16" rx="1.5" fill="rgba(201,150,42,0.15)" stroke="rgba(201,150,42,0.6)" stroke-width="1.5"/>
+              <rect x="15" y="9" width="12" height="4.5" fill="rgba(59,130,246,0.2)"/>
+              <rect x="15" y="14.5" width="6" height="9" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.3)" stroke-width="0.5"/>
+              <text x="21" y="9.5" text-anchor="middle" fill="rgba(201,150,42,0.9)" font-size="4" font-family="monospace" font-weight="700">★ BEST</text>
+              <!-- Layout 3 -->
+              <rect x="27" y="10" width="10" height="14" rx="1.5" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)" stroke-width="1.2"/>
+              <rect x="27" y="11" width="10" height="4" fill="rgba(99,102,241,0.2)"/>
+              <text x="32" y="11.5" text-anchor="middle" fill="rgba(99,102,241,0.8)" font-size="4" font-family="monospace" font-weight="700">58%</text>
+              <!-- GA label -->
+              <text x="20" y="32" text-anchor="middle" fill="rgba(56,189,248,0.7)" font-size="7" font-family="JetBrains Mono,monospace">3 LAYOUTS · GA ENGINE</text>
+            </svg>
+          </div>
+          <div class="lp-why-content">
+            <div class="lp-why-title">Generate 3 Unique Layouts</div>
+            <div class="lp-why-desc">Each generation produces 3 distinct layout templates with different room arrangements. Compare side-by-side and pick the best Vastu score for your family.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="lp-why-cta">
+        <p class="lp-why-cta-text">Ready to design your dream home?</p>
+        <button class="lp-cta-btn" onclick="goToStudio()">
+          <span class="lp-cta-icon">✦</span>
+          Start Generating Now
+          <svg class="lp-cta-arrow" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="logo-wrap" onclick="goToLanding()">
+      <div class="logo-name" style="font-size:0.9rem">IntelliPlan<span style="color:var(--gold-400)">·3D</span></div>
+    </div>
+    <div class="footer-copy">© 2025 IntelliPlan·3D · AI-Powered Floor Plan Studio</div>
+    <div class="footer-links">
+      <a class="footer-link" onclick="goToStudio()">Studio</a>
+      <a class="footer-link" onclick="navigate('results')">Results</a>
+      <a class="footer-link" onclick="navigate('ar')">AR View</a>
+      <a class="footer-link" onclick="checkAPI()">API Status</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE 01 — HOME / STUDIO (floor plan generator)
+════════════════════════════════════════════════════════ -->
+<div class="page" id="page-home">
+  <section class="hero">
+    <div class="hero-glow glow-1"></div>
+    <div class="hero-glow glow-2"></div>
+    <div class="hero-glow glow-3"></div>
+    <div class="corner corner--tl"></div>
+    <div class="corner corner--tr"></div>
+    <div class="corner corner--bl"></div>
+    <div class="corner corner--br"></div>
+
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="hero-eyebrow">
+          <div class="eyebrow-line"></div>
+          Vastu-Compliant AI Architecture
+          <div class="eyebrow-line"></div>
+        </div>
+        <h1 class="hero-h1">
+          Design Your<br>
+          <em>Dream Home</em>
+          <span class="line-2">with Intelligence</span>
+        </h1>
+        <p class="hero-sub">
+          Genetic algorithm–powered floor plan generation with Vastu Shastra compliance scoring. Get 2D blueprints, 3D walkthroughs, and AR previews in seconds.
+        </p>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-num">8<span>+</span></div>
+            <div class="stat-label">Vastu Rules</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-num">3<span>D</span></div>
+            <div class="stat-label">Visualizer</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-num">30<span>×</span></div>
+            <div class="stat-label">GA Cycles</div>
+          </div>
+        </div>
+        <div class="hero-pills">
+          <div class="pill-item"><div class="pill-dot"></div>2D Blueprint</div>
+          <div class="pill-item"><div class="pill-dot"></div>3D Model</div>
+          <div class="pill-item"><div class="pill-dot"></div>AR Preview</div>
+          <div class="pill-item"><div class="pill-dot"></div>PDF Export</div>
+          <div class="pill-item"><div class="pill-dot"></div>Vastu Engine</div>
+        </div>
+      </div>
+
+      <!-- Config panel -->
+      <div class="hero-right">
+        <div class="config-panel">
+          <div class="panel-header">
+            <div class="panel-title">Configuration</div>
+            <div class="panel-badge">GA Engine</div>
+          </div>
+          <div class="panel-body">
+
+            <div class="field-grid">
+              <div class="field-group">
+                <label class="field-label">Plot Size</label>
+                <select class="field-select" id="sel-plot" onchange="onPlotSelectChange(this.value)">
+                  <option value="30x40">30×40 ft · 1200 sqft</option>
+                  <option value="20x60">20×60 ft · 1200 sqft</option>
+                  <option value="40x60" selected>40×60 ft · 2400 sqft</option>
+                  <option value="50x80">50×80 ft · 4000 sqft</option>
+                  <option value="60x60">60×60 ft · 3600 sqft</option>
+                  <option value="custom">✎ Custom size…</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">BHK Type</label>
+                <select class="field-select" id="sel-bhk">
+                  <option value="1BHK">1 BHK</option>
+                  <option value="2BHK" selected>2 BHK</option>
+                  <option value="3BHK">3 BHK</option>
+                  <option value="4BHK">4 BHK</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="custom-plot-row" id="custom-plot-row">
+              <div class="field-group">
+                <label class="field-label">Custom Dimensions</label>
+                <div class="custom-plot-inputs">
+                  <div class="custom-plot-field">
+                    <span class="custom-plot-axis">W</span>
+                    <input type="number" class="field-input custom-dim-input" id="custom-width" placeholder="40" min="10" max="200" oninput="onCustomDimChange()"/>
+                    <span class="custom-plot-unit">ft</span>
+                  </div>
+                  <span class="custom-plot-times">×</span>
+                  <div class="custom-plot-field">
+                    <span class="custom-plot-axis">H</span>
+                    <input type="number" class="field-input custom-dim-input" id="custom-height" placeholder="60" min="10" max="200" oninput="onCustomDimChange()"/>
+                    <span class="custom-plot-unit">ft</span>
+                  </div>
+                  <div class="custom-plot-preview" id="custom-plot-preview">
+                    <span class="cpp-area" id="cpp-area">—</span>
+                    <span class="cpp-label">sqft</span>
+                  </div>
+                </div>
+                <div class="custom-plot-hint" id="custom-plot-hint">Enter width &amp; height between 10–200 ft</div>
+              </div>
+            </div>
+
+            <div class="field-full">
+              <div class="field-group">
+                <label class="field-label">Facing Direction</label>
+                <div class="facing-grid">
+                  <button class="facing-btn" data-dir="North" onclick="selectFacing('North')">
+                    <span class="dir-icon">⬆</span>North
+                  </button>
+                  <button class="facing-btn selected" data-dir="East" onclick="selectFacing('East')">
+                    <span class="dir-icon">➡</span>East
+                  </button>
+                  <button class="facing-btn" data-dir="South" onclick="selectFacing('South')">
+                    <span class="dir-icon">⬇</span>South
+                  </button>
+                  <button class="facing-btn" data-dir="West" onclick="selectFacing('West')">
+                    <span class="dir-icon">⬅</span>West
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-generate" id="btn-gen" onclick="generatePlan()">
+              <span class="btn-icon">✦</span>
+              <span id="btn-text">Generate AI Layout</span>
+            </button>
+          </div>
+          <div class="panel-footer">
+            <div class="panel-footer-text">Backend: localhost:5000</div>
+            <div class="api-status">
+              <div class="api-dot" id="api-dot"></div>
+              <span id="api-status-text">Checking…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results / Visualization -->
+  <section class="results-section" id="results-section">
+    <div class="section-header">
+      <div class="section-title">Generated Layouts</div>
+      <div class="section-meta" id="gen-meta">-- layouts · -- ms</div>
+    </div>
+
+    <div class="layout-tabs" id="layout-tabs"></div>
+
+    <div class="viz-grid">
+      <div class="view-card">
+        <div class="view-card-header">
+          <button class="view-tab active" id="vt-2d" onclick="switchView('2d')">📐 2D Blueprint</button>
+          <button class="view-tab" id="vt-3d" onclick="switchView('3d')">🏠 3D Model</button>
+        </div>
+        <div class="view-body">
+          <div class="tab-panel active" id="tp-2d">
+            <div class="canvas-wrap" id="canvas-2d-wrap">
+              <div class="canvas-overlay" id="canvas-label">FLOOR PLAN · 2D</div>
+              <div class="canvas-corner cc-tl"></div>
+              <div class="canvas-corner cc-tr"></div>
+              <div class="canvas-corner cc-bl"></div>
+              <div class="canvas-corner cc-br"></div>
+              <canvas id="canvas-2d"></canvas>
+            </div>
+          </div>
+          <div class="tab-panel" id="tp-3d">
+            <div class="canvas-wrap">
+              <div class="canvas-overlay">FLOOR PLAN · 3D</div>
+              <div class="canvas-corner cc-tl"></div>
+              <div class="canvas-corner cc-tr"></div>
+              <div class="canvas-corner cc-bl"></div>
+              <div class="canvas-corner cc-br"></div>
+              <canvas id="canvas-3d"></canvas>
+            </div>
+            <div class="controls-hint">
+              <div class="ctrl"><kbd>Drag</kbd> Rotate</div>
+              <div class="ctrl"><kbd>Scroll</kbd> Zoom</div>
+              <div class="ctrl"><kbd>Right</kbd> Pan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="vastu-card">
+          <div class="vastu-card-header">
+            <div class="vastu-card-title">Vastu Analysis</div>
+            <div style="font-family:var(--ff-mono);font-size:0.6rem;color:var(--text-veryfaint)">8 RULES</div>
+          </div>
+          <div class="vastu-card-body">
+            <div class="score-ring-wrap">
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                <defs>
+                  <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#c9962a"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="70" cy="70" r="55" fill="none" stroke="var(--ring-track)" stroke-width="8"/>
+                <circle id="score-arc" cx="70" cy="70" r="55" fill="none"
+                  stroke="url(#ringGrad)" stroke-width="8"
+                  stroke-linecap="round"
+                  transform="rotate(-90 70 70)"
+                  stroke-dasharray="345.4" stroke-dashoffset="345.4"
+                  style="transition:stroke-dashoffset 1.5s cubic-bezier(0.16,1,0.3,1)"/>
+                <text x="70" y="63" text-anchor="middle" class="score-main" id="score-num">--</text>
+                <text x="70" y="78" text-anchor="middle" class="score-pct" id="score-pct-label">/ 100</text>
+                <text x="70" y="92" text-anchor="middle" class="score-tag">VASTU SCORE</text>
+              </svg>
+            </div>
+            <div class="vastu-rules" id="vastu-rules">
+              <div class="empty-state" style="padding:1.5rem">
+                <div class="empty-text">Generate a plan to see analysis</div>
+              </div>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat">
+                <div class="mini-stat-val" id="ms-fitness">--</div>
+                <div class="mini-stat-key">Fitness Score</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-val" id="ms-util">--<span class="unit">%</span></div>
+                <div class="mini-stat-key">Space Util</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions-card">
+          <div class="actions-title">Quick Actions</div>
+          <div class="action-btns">
+            <button class="action-btn" onclick="navigate('results')">📊 Full Report</button>
+            <button class="action-btn" onclick="exportPDF()">📄 Export PDF</button>
+            <button class="action-btn ar-btn" onclick="navigate('ar')">🔮 AR View</button>
+            <button class="action-btn" onclick="generatePlan()">⟳ Regenerate</button>
+            <button class="action-btn-full" id="btn-launch-3d" onclick="launchStudio3DInline()">⬡ Launch Immersive 3D Experience</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend-card">
+      <div class="legend-title">Room Legend</div>
+      <div class="legend-grid" id="legend-grid"></div>
+    </div>
+
+    <!-- ── Inline 3D House Plans — shown when "Launch Immersive 3D" clicked ── -->
+    <div class="s3d-section" id="studio-3d-section" style="display:none">
+      <div class="s3d-header">
+        <div class="s3d-header-left">
+          <div class="s3d-eyebrow">✦ Immersive 3D Experience</div>
+          <h2 class="s3d-title">3D Architectural <em>House Plans</em></h2>
+          <p class="s3d-sub">3 styles generated from your floor plan · Drag to rotate · Send to AR</p>
+        </div>
+        <div class="s3d-header-right">
+          <div class="s3d-meta-pills" id="s3d-meta-pills"></div>
+          <div class="s3d-header-actions">
+            <button class="action-btn ar-btn" onclick="navigate('ar')" style="gap:6px">🔮 Full AR Viewer</button>
+            <button class="action-btn" onclick="closeStudio3D()" style="gap:6px">✕ Close</button>
+          </div>
+        </div>
+      </div>
+      <div class="s3d-grid">
+        <div class="s3d-card">
+          <div class="s3d-card-header">
+            <div class="s3d-card-badge">Plan A</div>
+            <div class="s3d-card-label">Classic · Pitched Roof</div>
+            <button class="s3d-ar-btn" onclick="navigate('ar')">🔮 AR</button>
+          </div>
+          <div class="s3d-canvas-wrap"><canvas id="s3d-canvas-0"></canvas><div class="tdp-canvas-hint">Drag to rotate</div></div>
+          <div class="s3d-card-footer"><span class="s3d-style-desc">Traditional gabled roof with front porch, stone base &amp; chimney</span></div>
+        </div>
+        <div class="s3d-card">
+          <div class="s3d-card-header">
+            <div class="s3d-card-badge" style="color:var(--cyan-400)">Plan B</div>
+            <div class="s3d-card-label">Modern · Flat Roof</div>
+            <button class="s3d-ar-btn" onclick="navigate('ar')">🔮 AR</button>
+          </div>
+          <div class="s3d-canvas-wrap"><canvas id="s3d-canvas-1"></canvas><div class="tdp-canvas-hint">Drag to rotate</div></div>
+          <div class="s3d-card-footer"><span class="s3d-style-desc">Flat roof with large curtain-wall glass &amp; dark accent volume</span></div>
+        </div>
+        <div class="s3d-card">
+          <div class="s3d-card-header">
+            <div class="s3d-card-badge" style="color:var(--gold-300)">Plan C</div>
+            <div class="s3d-card-label">Contemporary · L-Shape</div>
+            <button class="s3d-ar-btn" onclick="navigate('ar')">🔮 AR</button>
+          </div>
+          <div class="s3d-canvas-wrap"><canvas id="s3d-canvas-2"></canvas><div class="tdp-canvas-hint">Drag to rotate</div></div>
+          <div class="s3d-card-footer"><span class="s3d-style-desc">L-shaped dual volume with mono-slope roof &amp; panoramic glass</span></div>
+        </div>
+      </div>
+      <div class="s3d-footer-note">
+        <span class="s3d-note-icon">💡</span>
+        3D exteriors are derived from your selected BHK type and plot size.
+        Click <strong>🔮 Full AR Viewer</strong> to walk through rooms with Vastu overlay.
+      </div>
+    </div><!-- /.s3d-section -->
+
+  </section>
+
+  <!-- Hidden elements required by script.js -->
+  <span id="cd-gen" style="display:none"></span>
+  <span id="cd-score" style="display:none"></span>
+  <span id="cd-rooms" style="display:none"></span>
+  <span id="cd-api" style="display:none"></span>
+
+  <footer>
+    <div class="logo-wrap" onclick="goToLanding()">
+      <div class="logo-name" style="font-size:0.9rem">IntelliPlan<span style="color:var(--gold-400)">·3D</span></div>
+    </div>
+    <div class="footer-copy">© 2025 IntelliPlan·3D · AI-Powered Floor Plan Studio</div>
+    <div class="footer-links">
+      <a class="footer-link" onclick="navigate('results')">Results</a>
+      <a class="footer-link" onclick="navigate('ar')">AR View</a>
+      <a class="footer-link" onclick="checkAPI()">API Status</a>
+    </div>
+  </footer>
+</div>
+
+<!-- PAGE 02 — RESULTS -->
+<div class="page" id="page-results">
+  <div class="results-page-inner">
+    <div class="breadcrumb">
+      <a onclick="goToLanding()">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      <a onclick="goToStudio()">Studio</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>Results</span>
+    </div>
+    <div class="results-h1">Layout Analysis</div>
+    <div class="results-sub" id="r-sub">No plan generated yet</div>
+
+    <div id="results-empty" class="no-plan-hero">
+      <div class="no-plan-icon">🏗</div>
+      <div class="no-plan-text">Generate a floor plan first to see detailed results</div>
+      <button class="no-plan-btn" onclick="goToStudio()">← Go to Studio</button>
+    </div>
+
+    <div id="results-data" style="display:none">
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Plot Size</div><div class="kpi-value" id="r-plot">—</div><div class="kpi-badge">ft</div></div>
+        <div class="kpi-card"><div class="kpi-label">BHK Type</div><div class="kpi-value" id="r-bhk">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Facing</div><div class="kpi-value" id="r-facing" style="font-size:1.2rem">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Vastu Score</div><div class="kpi-value" id="r-vscore">—<span class="kpi-unit">%</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Rooms</div><div class="kpi-value" id="r-rooms">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Area</div><div class="kpi-value" id="r-area">—<span class="kpi-unit">sqft</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Space Util</div><div class="kpi-value" id="r-util">—<span class="kpi-unit">%</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Fitness</div><div class="kpi-value" id="r-fit">—</div></div>
+      </div>
+
+      <div class="breakdown-section">
+        <div class="breakdown-title">Vastu Compliance Breakdown</div>
+        <div id="breakdown-bars"></div>
+      </div>
+
+      <div class="room-table-wrap">
+        <div class="room-table-header">Room Specifications</div>
+        <table>
+          <thead>
+            <tr><th>Room</th><th>Type</th><th>Width (ft)</th><th>Depth (ft)</th><th>Area (sqft)</th></tr>
+          </thead>
+          <tbody id="room-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="result-actions">
+        <button class="ra-btn primary" onclick="goToStudio();setTimeout(()=>switchView('2d'),100)">📐 View 2D Plan</button>
+        <button class="ra-btn" onclick="goToStudio();setTimeout(()=>switchView('3d'),100)">🏠 3D Model</button>
+        <button class="ra-btn" onclick="navigate('ar')">🔮 AR View</button>
+        <button class="ra-btn" onclick="exportPDF()">📄 Export PDF</button>
+        <button class="ra-btn" onclick="goToStudio();generatePlan()">⟳ Regenerate</button>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <div class="logo-name" style="font-size:0.9rem;font-family:var(--ff-display);cursor:pointer" onclick="goToLanding()">IntelliPlan<span style="color:var(--gold-400)">·3D</span></div>
+    <div class="footer-copy">© 2025 IntelliPlan·3D</div>
+  </footer>
+</div>
+
+<!-- PAGE 03 — AR VIEW -->
+<div class="page" id="page-ar">
+  <div class="ar-page-inner">
+    <div class="breadcrumb">
+      <a onclick="goToLanding()">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      <a onclick="goToStudio()">Studio</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>AR View</span>
+    </div>
+    <div class="ar-page-title-row">
+      <div>
+        <div class="results-h1">Immersive 3D Viewer</div>
+        <div class="results-sub">Three.js WebXR-style floor plan · GA + Vastu Engine output</div>
+      </div>
+    </div>
+
+    <div id="ar-empty" class="no-plan-hero">
+      <div class="no-plan-icon">🔮</div>
+      <div class="no-plan-text">No floor plan loaded — generate one first.</div>
+      <button class="no-plan-btn" onclick="goToStudio()">← Go to Studio</button>
+    </div>
+
+    <div id="ar-viewer-wrap" style="display:none">
+      <!-- Two-column: canvas left + keyboard shortcuts sidebar right -->
+      <div class="ar-layout-grid">
+
+        <!-- ── Left: 3D Viewer ── -->
+        <div class="ar-viewer">
+          <div class="ar-viewer-header">
+            <div class="ar-title">AR · 3D Viewer · WebXR Simulation</div>
+            <div class="ar-controls-bar">
+              <button class="ar-ctrl-btn" onclick="ARViewer.reset()" title="Reset camera [R]">⊹ Reset</button>
+              <button class="ar-ctrl-btn" onclick="ARViewer.setTop()" title="Top view [T]">⊡ Top</button>
+              <button class="ar-ctrl-btn" onclick="ARViewer.setIso()" title="Isometric [I]">⬧ Iso</button>
+              <button class="ar-ctrl-btn" onclick="ARViewer.setOrbit()" title="Orbit [O]">⟳ Orbit</button>
+              <div class="ar-ctrl-sep"></div>
+              <button class="ar-ctrl-btn" id="ar-btn-wire"    onclick="ARViewer.toggleWireframe()" title="Wireframe [W]">⬡ Wire</button>
+              <button class="ar-ctrl-btn" id="ar-btn-explode" onclick="ARViewer.toggleExplode()"   title="Explode [E]">⊞ Explode</button>
+              <div class="ar-ctrl-sep"></div>
+              <button class="ar-ctrl-btn ar-ctrl-active" id="ar-btn-day"   onclick="ARViewer.setLight('day')"   title="Day [1]">☀</button>
+              <button class="ar-ctrl-btn"                id="ar-btn-dusk"  onclick="ARViewer.setLight('dusk')"  title="Dusk [2]">🌅</button>
+              <button class="ar-ctrl-btn"                id="ar-btn-night" onclick="ARViewer.setLight('night')" title="Night [3]">🌙</button>
+              <div class="ar-ctrl-sep"></div>
+              <button class="ar-ctrl-btn" onclick="ARViewer.screenshot()" title="Screenshot [S]">📷</button>
+              <button class="ar-ctrl-btn" onclick="ARViewer.fullscreen()" title="Fullscreen [F]">⛶</button>
+            </div>
+          </div>
+          <canvas id="ar-canvas"></canvas>
+          <div class="ar-footer">
+            <div class="ar-hint">Drag to orbit</div>
+            <div class="ar-hint">Scroll to zoom</div>
+            <div class="ar-hint">Right-drag to pan</div>
+            <div class="ar-hint">Dbl-click room for details</div>
+            <div class="ar-hint">Auto-spin active</div>
+          </div>
+        </div>
+
+        <!-- ── Right: Keyboard Shortcuts Sidebar ── -->
+        <div class="ar-shortcuts-sidebar">
+          <div class="ar-sc-header">
+            <span class="ar-sc-icon">⌨</span>
+            <span class="ar-sc-title">Keyboard Shortcuts</span>
+          </div>
+
+          <div class="ar-sc-section">
+            <div class="ar-sc-section-label">Camera</div>
+            <div class="ar-sc-row"><kbd>R</kbd><span>Reset camera</span></div>
+            <div class="ar-sc-row"><kbd>T</kbd><span>Top view</span></div>
+            <div class="ar-sc-row"><kbd>I</kbd><span>Isometric view</span></div>
+            <div class="ar-sc-row"><kbd>O</kbd><span>Orbit view</span></div>
+          </div>
+
+          <div class="ar-sc-divider"></div>
+
+          <div class="ar-sc-section">
+            <div class="ar-sc-section-label">Scene</div>
+            <div class="ar-sc-row"><kbd>W</kbd><span>Wireframe toggle</span></div>
+            <div class="ar-sc-row"><kbd>E</kbd><span>Explode view</span></div>
+          </div>
+
+          <div class="ar-sc-divider"></div>
+
+          <div class="ar-sc-section">
+            <div class="ar-sc-section-label">Lighting</div>
+            <div class="ar-sc-row"><kbd>1</kbd><span>☀ Day mode</span></div>
+            <div class="ar-sc-row"><kbd>2</kbd><span>🌅 Dusk mode</span></div>
+            <div class="ar-sc-row"><kbd>3</kbd><span>🌙 Night mode</span></div>
+          </div>
+
+          <div class="ar-sc-divider"></div>
+
+          <div class="ar-sc-section">
+            <div class="ar-sc-section-label">Utilities</div>
+            <div class="ar-sc-row"><kbd>S</kbd><span>Screenshot</span></div>
+            <div class="ar-sc-row"><kbd>F</kbd><span>Fullscreen</span></div>
+            <div class="ar-sc-row"><kbd>Esc</kbd><span>Close panels</span></div>
+          </div>
+
+          <div class="ar-sc-divider"></div>
+
+          <div class="ar-sc-section">
+            <div class="ar-sc-section-label">Mouse / Touch</div>
+            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Drag</span><span>Orbit</span></div>
+            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Scroll</span><span>Zoom</span></div>
+            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Right</span><span>Pan</span></div>
+            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">👆 Dbl-tap</span><span>Room details</span></div>
+            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🤌 Pinch</span><span>Zoom (touch)</span></div>
+          </div>
+
+          <div class="ar-sc-tip">
+            <span class="ar-sc-tip-icon">💡</span>
+            Rooms auto-spin on load. Any interaction pauses spin.
+          </div>
+        </div>
+
+      </div><!-- /.ar-layout-grid -->
+    </div>
+  </div>
+
+  <footer>
+    <div class="logo-name" style="font-size:0.9rem;font-family:var(--ff-display);cursor:pointer" onclick="goToLanding()">IntelliPlan<span style="color:var(--gold-400)">·3D</span></div>
+    <div class="footer-copy">© 2025 IntelliPlan·3D</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✦</span>
+  <span id="toast-msg">Ready</span>
+</div>
+
+<!-- Navigation helpers (before other scripts so they're available) -->
+<script>
+function goToStudio() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('nav-home').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goToLanding() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-landing').classList.add('active');
+  document.getElementById('nav-landing').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// Override navigate to also handle landing
+const _origNavigate = window.navigate;
+</script>
+
+<script src="ar.js"></script>
+<script src="script.js"></script>
+<script src="pdf.js"></script>
+
+<!-- Post-load: patch navigate to support landing page -->
+<script>
+(function() {
+  const _orig = window.navigate;
+  window.navigate = function(page) {
+    if (page === 'home')    { goToStudio();  return; }
+    if (page === 'landing') { goToLanding(); return; }
+    _orig && _orig(page);
+  };
+})();
+
+/* ─────────────────────────────────────────────────────────────────
+   STUDIO INLINE 3D HOUSE PLANS
+   Reads from activeLayout → derives BHK, plot, floors → renders
+   3 rotating Three.js house exteriors directly in the Studio page
+───────────────────────────────────────────────────────────────── */
+(function() {
+
+let _s3dRenderers = [null, null, null];
+let _s3dOpen = false;
+
+/* ── Public API ── */
+window.launchStudio3DInline = function() {
+  const section  = document.getElementById('studio-3d-section');
+  const btnLaunch = document.getElementById('btn-launch-3d');
+
+  // Derive config from active layout if available
+  let bhk    = '2BHK';
+  let pw = 40, ph = 60;
+  let finish = 'warm';
+
+  if (typeof activeLayout !== 'undefined' && activeLayout && activeLayout.plot) {
+    const p = activeLayout.plot;
+    bhk    = p.bhk_type || '2BHK';
+    pw     = p.width    || 40;
+    ph     = p.height   || 60;
+  } else {
+    // Fall back to studio selectors if no layout generated yet
+    const selBHK  = document.getElementById('sel-bhk');
+    const selPlot = document.getElementById('sel-plot');
+    if (selBHK) bhk = selBHK.value;
+    if (selPlot && selPlot.value !== 'custom') {
+      const parts = selPlot.value.split('x');
+      pw = parseInt(parts[0]); ph = parseInt(parts[1]);
+    }
+  }
+
+  const floors = (pw * ph >= 2400) ? 2 : 1;
+  const cfg    = { bhk, pw, ph, floors, finish };
+
+  // Toggle — if already open just close
+  if (_s3dOpen) { closeStudio3D(); return; }
+
+  // Reveal section with animation
+  section.style.display = 'block';
+  section.style.opacity = '0';
+  section.style.transform = 'translateY(24px)';
+  requestAnimationFrame(() => {
+    section.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+    section.style.opacity    = '1';
+    section.style.transform  = 'translateY(0)';
+  });
+  _s3dOpen = true;
+
+  // Update button text
+  if (btnLaunch) {
+    btnLaunch.innerHTML = '✕ Close 3D Experience';
+    btnLaunch.style.background = 'rgba(239,68,68,0.10)';
+    btnLaunch.style.borderColor = 'rgba(239,68,68,0.35)';
+    btnLaunch.style.color = '#f87171';
+  }
+
+  // Build meta pills
+  const beds = parseInt(bhk);
+  document.getElementById('s3d-meta-pills').innerHTML =
+    `<span class="s3d-pill">🏠 ${bhk}</span>` +
+    `<span class="s3d-pill">📐 ${pw}×${ph} ft</span>` +
+    `<span class="s3d-pill">🏗 ${floors} Floor${floors > 1 ? 's' : ''}</span>` +
+    `<span class="s3d-pill">🛏 ${beds} Bed${beds > 1 ? 's' : ''}</span>` +
+    `<span class="s3d-pill">📦 ${(pw*ph).toLocaleString()} sqft</span>`;
+
+  // Kill previous renderers
+  _s3dRenderers.forEach(r => { if (r) { r.stop(); try { r.renderer.dispose(); } catch(e) {} } });
+  _s3dRenderers = [null, null, null];
+
+  // Build each scene with stagger
+  ['classic','modern','contemporary'].forEach((style, i) => {
+    setTimeout(() => {
+      _s3dRenderers[i] = _buildS3DScene('s3d-canvas-' + i, { ...cfg, style });
+    }, i * 140);
+  });
+
+  // Scroll to section smoothly
+  setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+  if (typeof showToast === 'function')
+    showToast('🏠 3 architectural 3D plans generated', '🏠');
+};
+
+window.closeStudio3D = function() {
+  const section   = document.getElementById('studio-3d-section');
+  const btnLaunch = document.getElementById('btn-launch-3d');
+
+  section.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  section.style.opacity    = '0';
+  section.style.transform  = 'translateY(12px)';
+  setTimeout(() => { section.style.display = 'none'; }, 320);
+  _s3dOpen = false;
+
+  _s3dRenderers.forEach(r => { if (r) { r.stop(); try { r.renderer.dispose(); } catch(e) {} } });
+  _s3dRenderers = [null, null, null];
+
+  if (btnLaunch) {
+    btnLaunch.innerHTML = '⬡ Launch Immersive 3D Experience';
+    btnLaunch.style.background = '';
+    btnLaunch.style.borderColor = '';
+    btnLaunch.style.color = '';
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────
+   GEOMETRY HELPERS
+───────────────────────────────────────────────────────────── */
+function _gableGeom(w, h, d) {
+  const hw = w/2 + w*0.06, hd = d/2 + d*0.04;
+  const pos = new Float32Array([
+    -hw,0,-hd, -hw,0,hd,  0,h,hd,   -hw,0,-hd,  0,h,hd,  0,h,-hd,
+     hw,0,-hd,  0,h,-hd,  0,h,hd,    hw,0,-hd,  0,h,hd,  hw,0,hd,
+    -hw,0,hd,  hw,0,hd,   0,h,hd,
+     hw,0,-hd, -hw,0,-hd, 0,h,-hd,
+  ]);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+function _box(s,w,h,d,m,x,y,z,sh) {
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), m);
+  o.position.set(x,y,z);
+  if (sh!==false) { o.castShadow=true; o.receiveShadow=true; }
+  s.add(o); return o;
+}
+function _cyl(s,rt,rb,h,seg,m,x,y,z) {
+  const o = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), m);
+  o.position.set(x,y,z); o.castShadow=true; s.add(o); return o;
+}
+function _win(s, x,y,z,ww,wh,ry, trimM, glassM) {
+  const rf = new THREE.Mesh(new THREE.BoxGeometry(ww+0.1,wh+0.1,0.10), trimM);
+  const rg = new THREE.Mesh(new THREE.BoxGeometry(ww,    wh,    0.07), glassM);
+  if (ry) { rf.rotation.y=ry; rg.rotation.y=ry; }
+  rf.position.set(x,y,z); rg.position.set(x,y,z+(ry?0:0.015));
+  s.add(rf); s.add(rg);
+}
+function _tree(s,x,z,sc,dark) {
+  _cyl(s,0.12*sc,0.18*sc,1.1*sc,6, new THREE.MeshLambertMaterial({color:0x5c3a1e}),x,0.55*sc,z);
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.7*sc,8,7),
+    new THREE.MeshLambertMaterial({color:dark?0x2a5522:0x3d7a30}));
+  top.position.set(x,1.65*sc,z); top.castShadow=true; s.add(top);
+}
+function _bush(s,x,z,sc,col) {
+  const o = new THREE.Mesh(new THREE.SphereGeometry(0.38*sc,7,6),
+    new THREE.MeshLambertMaterial({color:col||0x2d5a27}));
+  o.scale.y=0.75; o.position.set(x,0.28*sc,z); s.add(o);
+}
+function _car(s,x,z,col) {
+  const bM = new THREE.MeshLambertMaterial({color:col||0xd4d4d4});
+  const tM = new THREE.MeshLambertMaterial({color:0x1a1a1a});
+  _box(s,3.8,1.0,1.85,bM,x,0.5,z,true);
+  _box(s,2.3,0.78,1.7, new THREE.MeshLambertMaterial({color:col?col-0x111111:0xbbbbbb}),x,1.39,z,true);
+  _box(s,2.1,0.55,0.06,new THREE.MeshLambertMaterial({color:0x5a8ab0,transparent:true,opacity:0.55}),x,1.48,z+0.88,false);
+  [-1.15,1.15].forEach(wx=>[-0.75,0.75].forEach(wz=>{
+    const wh=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.24,8),tM);
+    wh.rotation.z=Math.PI/2; wh.position.set(x+wx,0.32,z+wz); s.add(wh);
+  }));
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SCENE BUILDER
+───────────────────────────────────────────────────────────── */
+function _buildS3DScene(canvasId, cfg) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+
+  const W = canvas.parentElement.clientWidth || 380;
+  const H = 320;
+  canvas.width = W; canvas.height = H;
+  canvas.style.height = H + 'px';
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xc2ddf0);
+  scene.fog = new THREE.Fog(0xc2ddf0, 42, 75);
+
+  const camera = new THREE.PerspectiveCamera(42, W/H, 0.1, 150);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xfff8e8, 0.85));
+  const sun = new THREE.DirectionalLight(0xfffbf0, 1.4);
+  sun.position.set(15,22,14); sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.left=sun.shadow.camera.bottom=-22;
+  sun.shadow.camera.right=sun.shadow.camera.top=22;
+  sun.shadow.camera.far=65;
+  scene.add(sun);
+  scene.add(new THREE.DirectionalLight(0xaaccee, 0.42).position.set(-10,6,-8) && new THREE.DirectionalLight(0xaaccee,0.42));
+  const fill2 = new THREE.DirectionalLight(0xaaccee, 0.42);
+  fill2.position.set(-10,6,-8); scene.add(fill2);
+  scene.add(new THREE.HemisphereLight(0x88aacc, 0x446622, 0.4));
+
+  // Ground
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(55,45),
+    new THREE.MeshLambertMaterial({color:0x5a8a48}));
+  gnd.rotation.x=-Math.PI/2; gnd.receiveShadow=true; scene.add(gnd);
+
+  // Driveway
+  const drv = new THREE.Mesh(new THREE.PlaneGeometry(4.5,14),
+    new THREE.MeshLambertMaterial({color:0xb5b1a9}));
+  drv.rotation.x=-Math.PI/2; drv.position.set(-4.8,0.01,6); scene.add(drv);
+
+  // Materials
+  const wC = cfg.finish==='cool' ? 0xf0f0f0 : cfg.finish==='earth' ? 0xe8d5b0 : 0xf5f0e8;
+  const rC = cfg.style==='modern' ? 0x3a3a3a : cfg.style==='contemporary' ? 0x252525 : 0x352820;
+  const aC = cfg.finish==='earth' ? 0x7a5c14 : cfg.style==='contemporary' ? 0x1a1e2e : 0x3a2818;
+  const sC = 0x857060;
+
+  const wallM  = new THREE.MeshLambertMaterial({color:wC});
+  const roofM  = new THREE.MeshLambertMaterial({color:rC});
+  const accentM= new THREE.MeshLambertMaterial({color:aC});
+  const stoneM = new THREE.MeshLambertMaterial({color:sC});
+  const trimM  = new THREE.MeshLambertMaterial({color:0xffffff});
+  const glassM = new THREE.MeshLambertMaterial({color:0x5a8ab8,transparent:true,opacity:0.65});
+  const doorM  = new THREE.MeshLambertMaterial({color:cfg.style==='classic'?0x3c2312:0x151c2e});
+  const goldM  = new THREE.MeshLambertMaterial({color:0xd9aa3f});
+  const fl     = cfg.floors;
+
+  /* ── CLASSIC ── */
+  if (cfg.style === 'classic') {
+    const hW=8.5, hH=3.3*fl, hD=6.2;
+    _box(scene,hW,hH,hD,wallM,0,hH/2,0);
+    _box(scene,2.8,1.3,hD+0.04,stoneM,-hW/2+1.4,0.65,0);
+    _box(scene,hW+0.06,0.22,hD+0.06,trimM,0,2.85,0,false);
+    const rg2 = new THREE.Mesh(_gableGeom(hW,2.4,hD),roofM);
+    rg2.position.set(0,hH,0); rg2.castShadow=true; scene.add(rg2);
+    _box(scene,hW+0.5,0.22,hD+0.3,trimM,0,hH-0.11,0,false);
+    _box(scene,0.75,1.6,0.75,stoneM,-2.2,hH+1.2,-1.6);
+    _box(scene,0.95,0.15,0.95,accentM,-2.2,hH+2.08,-1.6,false);
+    _box(scene,4.0,0.2,2.2,trimM,0,0.1,hD/2+1.1,false);
+    _box(scene,4.2,0.18,2.4,roofM,0,3.0,hD/2+1.1,true);
+    [-1.6,1.6].forEach(px=>_cyl(scene,0.13,0.15,3.0,10,trimM,px,1.5,hD/2+2.1));
+    _box(scene,1.25,2.3,0.12,trimM,0,1.05,hD/2+0.02,false);
+    _box(scene,1.0,2.1,0.09,doorM,0,1.05,hD/2+0.07,false);
+    _box(scene,0.12,0.12,0.12,goldM,0.38,1.05,hD/2+0.14,false);
+    [[-2.8,1],[2.8,1]].forEach(([wx,wy])=>_win(scene,wx,wy,hD/2+0.02,1.5,1.4,null,trimM,glassM));
+    _car(scene,-4.8,5.5,0xcecece);
+    _tree(scene,-8.0,2.0,1.3,true); _tree(scene,7.2,2.5,1.1,false);
+    _tree(scene,-7.5,-4.5,1.0,true); _tree(scene,7.5,0.5,0.85,true);
+    [-3.2,-2.2,2.2,3.2].forEach(bx=>_bush(scene,bx,hD/2+2.5,1,0x2d5a27));
+  }
+
+  /* ── MODERN ── */
+  else if (cfg.style === 'modern') {
+    const hW=9.5, hH=3.5*fl, hD=6.8, accW=2.8, accH=hH+1.0;
+    _box(scene,hW,hH,hD,wallM,0,hH/2,0);
+    _box(scene,accW,accH,hD,accentM,-hW/2+accW/2,accH/2,0);
+    _box(scene,hW+0.25,0.38,hD+0.25,roofM,0,hH+0.19,0,true);
+    _box(scene,accW+0.12,0.38,hD+0.12,accentM,-hW/2+accW/2,accH+0.19,0,true);
+    [hH*0.32,hH*0.66].forEach(ly=>{
+      _box(scene,hW+0.06,0.07,hD+0.06,accentM,0,ly,0,false);
+    });
+    const lgH=hH*0.68;
+    [[1.8,hH/2+0.1],[4.6,hH/2+0.1]].forEach(([wx,wy])=>
+      _win(scene,wx,wy,hD/2+0.02,3.2,lgH,null,trimM,glassM));
+    _win(scene,-hW/2+accW/2+0.1,hH/2+0.15,hD/2+0.02,0.55,hH*0.72,null,trimM,glassM);
+    _box(scene,3.8,0.18,2.2,roofM,2.0,hH-0.45,hD/2+1.1,true);
+    _box(scene,1.1,2.5,0.12,trimM,1.6,1.15,hD/2+0.02,false);
+    _box(scene,0.9,2.3,0.09,doorM,1.6,1.15,hD/2+0.07,false);
+    _box(scene,0.12,0.12,0.12,goldM,1.18,1.15,hD/2+0.14,false);
+    _box(scene,3.6,0.28,0.9,trimM,1.8,0.14,hD/2+1.15,false);
+    [-0.9,-0.3,0.3,0.9].forEach(fx=>
+      _box(scene,0.1,hH*0.55,0.4,accentM,fx-hW/2+accW+0.8,hH*0.72,hD/2+0.22,false));
+    _car(scene,-4.8,5.5,0xe8e8e8);
+    _tree(scene,-9.0,2.5,1.5,true); _tree(scene,8.0,2.0,1.2,false);
+    _tree(scene,-8.5,-4.0,1.1,true); _tree(scene,7.5,-3.5,1.0,false);
+    [-4,-3,-2,-1].forEach(bx=>
+      _box(scene,0.85,0.5,0.55,new THREE.MeshLambertMaterial({color:0x3d7030}),bx,0.25,hD/2+0.7,false));
+  }
+
+  /* ── CONTEMPORARY ── */
+  else {
+    const mW=7.5,mH=3.3*fl,mD=6.5, wW=4.5,wH=(3.3*fl)+0.9,wD=5.5;
+    const wox=-mW/2-wW/2-0.1, woz=-mD/2+wD/2-0.2;
+    _box(scene,mW,mH,mD,wallM,0,mH/2,0);
+    _box(scene,wW,wH,wD,accentM,wox,wH/2,woz);
+    _box(scene,mW+0.3,0.28,mD+0.25,roofM,0,mH+0.14,0,true);
+    _box(scene,wW+0.2,0.28,wD+0.2,accentM,wox,wH+0.14,woz,true);
+    const cwH=mH*0.72;
+    _win(scene,mW*0.18,mH*0.52,mD/2+0.02,mW*0.55,cwH,null,trimM,glassM);
+    _box(scene,mW*0.25,mH,mD+0.04,wallM,mW/2-mW*0.125,mH/2,0,false);
+    [-0.9,0,0.9].forEach(wx=>
+      _win(scene,wox+wx,wH*0.52,woz+wD/2+0.02,0.5,wH*0.62,null,trimM,glassM));
+    _box(scene,1.15,2.5,0.12,accentM,-0.8,1.15,mD/2+0.02,false);
+    _box(scene,0.95,2.3,0.09,doorM,-0.8,1.15,mD/2+0.07,false);
+    _box(scene,0.12,0.12,0.12,goldM,-0.4,1.15,mD/2+0.14,false);
+    _box(scene,2.8,0.12,2.2,accentM,-0.8,mH-0.3,mD/2+1.1,true);
+    _box(scene,2.8,0.28,0.9,trimM,-0.8,0.14,mD/2+1.25,false);
+    for (let hx=-2.0;hx<=2.5;hx+=0.65) _bush(scene,hx,mD/2+2.35,1,0x3a6e2a);
+    _car(scene,wox-1.2,5.8,0xf0f0f0);
+    _tree(scene,7.5,2.5,1.3,false); _tree(scene,-9.5,1.5,1.2,true);
+    _tree(scene,7.0,-4.0,1.0,false); _tree(scene,8.0,-1.0,0.85,false);
+  }
+
+  /* Camera orbit */
+  let theta=-0.45, phi=Math.PI/7;
+  const RAD=24, tgt=new THREE.Vector3(0,2.8,0);
+  let drag=false, px0=0, autoSpin=true;
+
+  function updateCam() {
+    camera.position.set(
+      tgt.x+RAD*Math.cos(phi)*Math.sin(theta),
+      tgt.y+RAD*Math.sin(phi),
+      tgt.z+RAD*Math.cos(phi)*Math.cos(theta));
+    camera.lookAt(tgt);
+  }
+  updateCam();
+
+  function _md(e){drag=true;px0=e.clientX;autoSpin=false;}
+  function _mu(){drag=false;}
+  function _mm(e){if(!drag)return;theta-=(e.clientX-px0)*0.009;px0=e.clientX;updateCam();}
+  function _ts(e){if(e.touches.length===1){drag=true;px0=e.touches[0].clientX;autoSpin=false;}}
+  function _tm(e){if(!drag||e.touches.length!==1)return;theta-=(e.touches[0].clientX-px0)*0.013;px0=e.touches[0].clientX;updateCam();e.preventDefault();}
+  function _te(){drag=false;}
+
+  canvas.addEventListener('mousedown',_md);
+  canvas.addEventListener('touchstart',_ts,{passive:true});
+  canvas.addEventListener('touchmove',_tm,{passive:false});
+  canvas.addEventListener('touchend',_te);
+  window.addEventListener('mouseup',_mu);
+  window.addEventListener('mousemove',_mm);
+
+  const resObs=new ResizeObserver(()=>{
+    const nW=canvas.parentElement.clientWidth||380;
+    renderer.setSize(nW,H); camera.aspect=nW/H; camera.updateProjectionMatrix();
+  });
+  resObs.observe(canvas.parentElement);
+
+  let animId;
+  function loop(){
+    animId=requestAnimationFrame(loop);
+    if(autoSpin){theta-=0.003;updateCam();}
+    renderer.render(scene,camera);
+  }
+  loop();
+
+  return {
+    renderer,
+    stop:()=>{
+      cancelAnimationFrame(animId);
+      canvas.removeEventListener('mousedown',_md);
+      canvas.removeEventListener('touchstart',_ts);
+      canvas.removeEventListener('touchmove',_tm);
+      canvas.removeEventListener('touchend',_te);
+      window.removeEventListener('mouseup',_mu);
+      window.removeEventListener('mousemove',_mm);
+      resObs.disconnect();
+    }
+  };
+}
+
+})(); // end studio 3D IIFE
+</script>
+
+</body>
+</html>
