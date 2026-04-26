@@ -8,7 +8,7 @@ ROOM_TYPES = [
     "bathroom", "toilet",
     "bathroom_master", "toilet_master",
     "bathroom_attached", "toilet_attached",
-    "pooja", "utility",
+    "utility",
 ]
 
 ROOM_LABELS = {
@@ -24,21 +24,20 @@ ROOM_LABELS = {
     "toilet_master":       "Toilet (Master)",
     "bathroom_attached":   "Bathroom (Attached)",
     "toilet_attached":     "Toilet (Attached)",
-    "pooja":               "Pooja Room",
     "utility":             "Utility Room",
 }
 
 # ── BHK compositions ─────────────────────────────────────────────
 # Rules:
-#   • NO balcony, NO store room in any plan
-#   • Living room is the hall (biggest room)
+#   • NO balcony, NO store room, NO pooja in any plan
+#   • Living room is the hall (biggest room) with Entrance attached
 #   • Kitchen + Dining always adjacent
-#   • Pooja room is small
-#   • 1BHK: 1 common bathroom + toilet
-#   • 2BHK: 1 common bathroom + toilet
-#   • 3BHK: 1 common (bathroom + toilet)
+#   • Bathroom/Toilet are small rooms
+#   • 1BHK : 1 common bathroom + toilet
+#   • 2BHK : 1 common bathroom + toilet
+#   • 3BHK : 1 common (bathroom + toilet) in CENTER
 #            + 1 attached to master (bathroom_master + toilet_master)
-#   • 4BHK: 1 common (bathroom + toilet)
+#   • 4BHK : 1 common (bathroom + toilet) in CENTER
 #            + 1 attached to master (bathroom_master + toilet_master)
 #            + 1 attached to bedroom 2 (bathroom_attached + toilet_attached)
 BHK_ROOM_COMPOSITIONS = {
@@ -46,48 +45,43 @@ BHK_ROOM_COMPOSITIONS = {
         "entrance", "living", "kitchen",
         "master_bedroom",
         "bathroom", "toilet",
-        "pooja",
     ],
     "2BHK": [
         "entrance", "living", "dining", "kitchen",
         "master_bedroom", "bedroom",
         "bathroom", "toilet",
-        "pooja",
     ],
     "3BHK": [
         "entrance", "living", "dining", "kitchen",
         "master_bedroom", "bedroom", "bedroom",
         "bathroom_master", "toilet_master",   # attached to master
-        "bathroom", "toilet",                  # common
-        "pooja",
+        "bathroom", "toilet",                  # common CENTER
     ],
     "4BHK": [
         "entrance", "living", "dining", "kitchen",
         "master_bedroom", "bedroom", "bedroom", "bedroom",
         "bathroom_master", "toilet_master",    # attached to master bedroom
         "bathroom_attached", "toilet_attached",# attached to bedroom 2
-        "bathroom", "toilet",                  # common
-        "pooja", "utility",
+        "bathroom", "toilet",                  # common CENTER
+        "utility",
     ],
 }
 
 # ── Minimum room sizes (ft × ft) ────────────────────────────────
-# Living room min kept large; pooja/toilet/bathroom kept small
 ROOM_MIN_SIZES = {
-    "entrance":            (5.0,  6.0),
-    "living":              (14.0, 16.0),   # hall — must be largest
+    "entrance":            (5.0,  5.0),
+    "living":              (14.0, 14.0),
     "dining":              (9.0,  9.0),
-    "kitchen":             (8.0,  9.0),
-    "master_bedroom":      (11.0, 12.0),
-    "bedroom":             (10.0, 11.0),
-    "bathroom":            (5.0,  5.0),   # small
-    "toilet":              (4.0,  4.0),   # small
-    "bathroom_master":     (5.0,  5.0),   # small — attached to master
-    "toilet_master":       (4.0,  4.0),   # small — attached to master
-    "bathroom_attached":   (5.0,  5.0),   # small — attached to bedroom
-    "toilet_attached":     (4.0,  4.0),   # small — attached to bedroom
-    "pooja":               (4.0,  4.0),   # small corner room
-    "utility":             (5.0,  6.0),
+    "kitchen":             (8.0,  8.0),
+    "master_bedroom":      (11.0, 11.0),
+    "bedroom":             (10.0, 10.0),
+    "bathroom":            (4.5,  4.5),
+    "toilet":              (3.5,  3.5),
+    "bathroom_master":     (4.5,  4.5),
+    "toilet_master":       (3.5,  3.5),
+    "bathroom_attached":   (4.5,  4.5),
+    "toilet_attached":     (3.5,  3.5),
+    "utility":             (5.0,  5.0),
 }
 
 ROOM_PREFERRED_RATIOS = {
@@ -103,7 +97,6 @@ ROOM_PREFERRED_RATIOS = {
     "toilet_master":       (0.7, 0.9),
     "bathroom_attached":   (0.8, 1.0),
     "toilet_attached":     (0.7, 0.9),
-    "pooja":               (1.0, 1.0),
     "utility":             (1.0, 1.4),
 }
 
@@ -118,18 +111,15 @@ GA_TOURNAMENT_SIZE     = 5
 GA_ELITISM_COUNT       = 3
 GA_TOP_LAYOUTS_RETURN  = 3
 
-# ── Vastu rule weights (derived from reference Vastu images) ─────
-# Image 1: Basics of Vasthu  |  Image 2: Room-zone grid
-# Image 3: Ideal Placement table (Best / Good / x)
-# Total = 120; normalised to 0–100 in vastu_score.py
+# ── Vastu rule weights ───────────────────────────────────────────
 VASTU_RULE_WEIGHTS = {
-    "kitchen_direction":   15,   # Image 3: Kitchen  → Best = SE
-    "master_bedroom_dir":  20,   # Image 3: Master Bed → Best = SW
-    "living_room_dir":     15,   # Image 3: Living Room → Best = NW
-    "pooja_room_dir":      15,   # Image 3: Temple/Pooja → Best = NE
-    "bathroom_direction":  10,   # Image 3: Bathroom/Toilet → Best = NW
-    "dining_direction":    10,   # Image 2: Dining in E / S
-    "entrance_direction":  15,   # Image 1: Good Entry = NE / N / E
+    "kitchen_direction":   15,   # SE = Best
+    "master_bedroom_dir":  20,   # SW = Best
+    "living_room_dir":     15,   # NW = Best
+    "pooja_room_dir":       0,   # removed — no pooja room
+    "bathroom_direction":  10,   # NW = Best
+    "dining_direction":    10,   # E/SE
+    "entrance_direction":  15,   # NE/N/E
 }
 
 FITNESS_W_VASTU        = 0.45
@@ -137,18 +127,9 @@ FITNESS_W_SPACE_UTIL   = 0.25
 FITNESS_W_NO_OVERLAP   = 0.20
 FITNESS_W_ASPECT_RATIO = 0.10
 
-# ── BSP zone → preferred room types (priority order) ─────────────
-# NE : Pooja, Entrance  (Light, low, auspicious — Image 1)
-# NW : Living (Best per Image 3), Toilet/Bathroom, Utility
-# SE : Kitchen (Best per Image 3)
-# SW : Master Bedroom (Heavy, high — Best per Image 3)
-# S  : Secondary Bedrooms, Dining
-# E  : Dining, Bedroom
-# W  : Bedroom
-# N  : Entrance, Living
-# C  : Brahmasthana — keep open
+# ── BSP zone → preferred room types ─────────────────────────────
 BSP_GROUPS = {
-    "NE": ["pooja", "entrance"],
+    "NE": ["entrance"],
     "NW": ["living", "toilet", "bathroom", "toilet_master",
            "bathroom_master", "utility"],
     "SE": ["kitchen"],

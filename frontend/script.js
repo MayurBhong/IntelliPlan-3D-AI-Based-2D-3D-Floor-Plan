@@ -10,6 +10,7 @@ let currentLayouts = [];
 let activeLayoutIdx = 0;
 let activeLayout = null;
 let renderer3D = null;
+// AR state now managed by ARViewer module (ar.js)
 let selectedFacing = 'East';
 
 // ═══════════════════════════════════════════════════════════════
@@ -70,40 +71,40 @@ async function checkAPI() {
 
 // ═══════════════════════════════════════════════════════════════
 // ROOM COLOURS
-// — balcony and store removed
-// — bathroom_master, toilet_master, bathroom_attached, toilet_attached added
 // ═══════════════════════════════════════════════════════════════
 const COLORS = {
-  entrance:            { fill:'rgba(236,72,153,0.4)',  stroke:'#ec4899', hex:0xec4899 },
-  living:              { fill:'rgba(59,130,246,0.4)',  stroke:'#3b82f6', hex:0x3b82f6 },
-  dining:              { fill:'rgba(234,179,8,0.4)',   stroke:'#eab308', hex:0xeab308 },
-  kitchen:             { fill:'rgba(245,158,11,0.4)',  stroke:'#f59e0b', hex:0xf59e0b },
-  master_bedroom:      { fill:'rgba(139,92,246,0.4)',  stroke:'#8b5cf6', hex:0x8b5cf6 },
-  bedroom:             { fill:'rgba(99,102,241,0.4)',  stroke:'#6366f1', hex:0x6366f1 },
-  bathroom:            { fill:'rgba(20,184,166,0.4)',  stroke:'#14b8a6', hex:0x14b8a6 },
-  toilet:              { fill:'rgba(6,182,212,0.4)',   stroke:'#06b6d4', hex:0x06b6d4 },
-  bathroom_master:     { fill:'rgba(45,212,191,0.4)',  stroke:'#2dd4bf', hex:0x2dd4bf },
-  toilet_master:       { fill:'rgba(34,211,238,0.4)',  stroke:'#22d3ee', hex:0x22d3ee },
-  bathroom_attached:   { fill:'rgba(52,211,153,0.4)',  stroke:'#34d399', hex:0x34d399 },
-  toilet_attached:     { fill:'rgba(56,189,248,0.4)',  stroke:'#38bdf8', hex:0x38bdf8 },
-  pooja:               { fill:'rgba(249,115,22,0.4)',  stroke:'#f97316', hex:0xf97316 },
-  utility:             { fill:'rgba(148,163,184,0.4)', stroke:'#94a3b8', hex:0x94a3b8 },
+  entrance:       { fill:'rgba(236,72,153,0.4)', stroke:'#ec4899', hex:0xec4899 },
+  living:         { fill:'rgba(59,130,246,0.4)', stroke:'#3b82f6', hex:0x3b82f6 },
+  dining:         { fill:'rgba(234,179,8,0.4)',  stroke:'#eab308', hex:0xeab308 },
+  kitchen:        { fill:'rgba(245,158,11,0.4)', stroke:'#f59e0b', hex:0xf59e0b },
+  master_bedroom: { fill:'rgba(139,92,246,0.4)', stroke:'#8b5cf6', hex:0x8b5cf6 },
+  bedroom:        { fill:'rgba(99,102,241,0.4)', stroke:'#6366f1', hex:0x6366f1 },
+  bathroom:       { fill:'rgba(20,184,166,0.4)', stroke:'#14b8a6', hex:0x14b8a6 },
+  toilet:         { fill:'rgba(6,182,212,0.4)',  stroke:'#06b6d4', hex:0x06b6d4 },
+  balcony:        { fill:'rgba(34,197,94,0.4)',  stroke:'#22c55e', hex:0x22c55e },
+  pooja:          { fill:'rgba(249,115,22,0.4)', stroke:'#f97316', hex:0xf97316 },
+  store:          { fill:'rgba(100,116,139,0.4)',stroke:'#64748b', hex:0x64748b },
+  utility:        { fill:'rgba(148,163,184,0.4)',stroke:'#94a3b8', hex:0x94a3b8 },
 };
 const C_DEF = { fill:'rgba(100,116,139,0.4)', stroke:'#64748b', hex:0x64748b };
 
 // ═══════════════════════════════════════════════════════════════
 // CUSTOM PLOT SIZE HELPERS
 // ═══════════════════════════════════════════════════════════════
+
+/** Show / hide the custom row when "Custom" is chosen */
 function onPlotSelectChange(val) {
   const row = document.getElementById('custom-plot-row');
   if (val === 'custom') {
     row.classList.add('visible');
+    // Reset animation so it plays each time
     row.style.animation = 'none';
-    row.offsetHeight;
+    row.offsetHeight; // reflow
     row.style.animation = '';
     document.getElementById('custom-width').focus();
   } else {
     row.classList.remove('visible');
+    // Reset hint & preview when switching away
     document.getElementById('custom-plot-hint').textContent = 'Enter width & height between 10–200 ft';
     document.getElementById('custom-plot-hint').className = 'custom-plot-hint';
     document.getElementById('cpp-area').textContent = '—';
@@ -111,6 +112,7 @@ function onPlotSelectChange(val) {
   }
 }
 
+/** Live-update the sqft preview as user types */
 function onCustomDimChange() {
   const w    = parseInt(document.getElementById('custom-width').value,  10);
   const h    = parseInt(document.getElementById('custom-height').value, 10);
@@ -143,12 +145,19 @@ function onCustomDimChange() {
   hint.classList.add('success');
 }
 
+/**
+ * Returns the resolved plot string (e.g. "40x60").
+ * Returns null if custom values are invalid.
+ */
 function getPlotValue() {
   const sel = document.getElementById('sel-plot').value;
   if (sel !== 'custom') return sel;
+
   const w = parseInt(document.getElementById('custom-width').value,  10);
   const h = parseInt(document.getElementById('custom-height').value, 10);
-  if (isNaN(w) || isNaN(h) || w < 10 || w > 200 || h < 10 || h > 200) return null;
+  if (isNaN(w) || isNaN(h) || w < 10 || w > 200 || h < 10 || h > 200) {
+    return null;
+  }
   return `${w}x${h}`;
 }
 
@@ -156,11 +165,12 @@ function getPlotValue() {
 // MAIN GENERATE — calls Flask backend
 // ═══════════════════════════════════════════════════════════════
 async function generatePlan() {
-  const plot = getPlotValue();
+  const plot    = getPlotValue();
   if (!plot) { showToast('⚠ Enter a valid custom plot size', '⚠'); return; }
-  const bhk    = document.getElementById('sel-bhk').value;
-  const facing = selectedFacing;
+  const bhk     = document.getElementById('sel-bhk').value;
+  const facing  = selectedFacing;
 
+  // UI: loading state
   const btn = document.getElementById('btn-gen');
   const txt = document.getElementById('btn-text');
   btn.classList.add('loading');
@@ -197,27 +207,34 @@ async function generatePlan() {
     const data = await res.json();
     const elapsed = Date.now() - t0;
 
-    if (!data.success || !data.layouts?.length) throw new Error('No layouts returned from API');
+    if (!data.success || !data.layouts?.length) {
+      throw new Error('No layouts returned from API');
+    }
 
-    currentLayouts  = data.layouts;
-    activeLayoutIdx = 0;
-    activeLayout    = currentLayouts[0];
+    currentLayouts   = data.layouts;
+    activeLayoutIdx  = 0;
+    activeLayout     = currentLayouts[0];
+    window.activeLayout = activeLayout;   // expose to pdf.js
 
-    document.getElementById('cd-gen').textContent   = 'DONE';
+    // Update header display
+    document.getElementById('cd-gen').textContent = `DONE`;
     document.getElementById('cd-score').textContent = activeLayout.vastu_score?.toFixed(0) + '%';
     document.getElementById('cd-rooms').textContent = activeLayout.rooms?.length;
 
     renderUI(elapsed);
     updateResults();
+
     showToast(`✦ ${data.count} layouts generated · Vastu: ${activeLayout.vastu_score?.toFixed(1)}%`, '✦');
   } catch (err) {
     console.error('Generate error:', err);
+    // Fallback to local demo plan if backend offline — 3 templates
     const localPlan  = buildLocalPlan(plot, bhk, facing, 0);
     const localPlan1 = buildLocalPlan(plot, bhk, facing, 1);
     const localPlan2 = buildLocalPlan(plot, bhk, facing, 2);
     currentLayouts  = [localPlan, localPlan1, localPlan2];
     activeLayoutIdx = 0;
     activeLayout    = localPlan;
+    window.activeLayout = activeLayout;   // expose to pdf.js
     renderUI(0);
     updateResults();
     showToast(`⚠ API offline — showing demo plan`, '⚠');
@@ -230,288 +247,402 @@ async function generatePlan() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// LOCAL FALLBACK PLAN
-// — No balcony, no store room in any template
-// — 3BHK: bathroom_master + toilet_master (attached) + bathroom + toilet (common)
-// — 4BHK: bathroom_master + toilet_master + bathroom_attached + toilet_attached + bathroom + toilet
+// LOCAL FALLBACK PLAN (when backend is offline)
 // ═══════════════════════════════════════════════════════════════
+// ── Grid-based proper floor plan generator ──────────────────────
+// Produces 3 genuinely different layout templates that look like
+// real architectural plans (Image 1 style). Each template is a
+// different grid arrangement of rooms inside a clean rectangle.
+// ═══════════════════════════════════════════════════════════════
+
+
 function buildLocalPlan(plotStr, bhk, facing, templateIdx) {
   const [pw, ph] = plotStr.split('x').map(Number);
-  const m = 2, iw = pw - 2*m, ih = ph - 2*m;
+  const m = 2, uw = pw - 2*m, uh = ph - 2*m;
   const tidx = (templateIdx || 0) % 3;
 
-  // Build a room dict from grid fractions of iw/ih
+  const rnd = (lo, hi) => lo + Math.random() * (hi - lo);
+  const mw  = (ft) => Math.max(ft / uw, 0.01);
+  const mh  = (ft) => Math.max(ft / uh, 0.01);
+
+  // Zone layout fractions (keep rooms in correct Vastu compass zones)
+  // NW = top-left  (x < 0.44, y < 0.35)
+  // NE = top-right (x > 0.56, y < 0.35)
+  // W  = mid-left  (x < 0.38, y middle)
+  // E  = mid-right (x > 0.62, y middle)
+  // SW = bot-left  (x < 0.38, y > 0.65)
+  // S  = bot-mid   (x 0.38–0.62, y > 0.65)
+  // SE = bot-right (x > 0.62, y > 0.65)
+
   const R = (type, label, x, y, w, h) => ({
     type, label,
-    x: m + x, y: m + y,
-    w, h, width: w, height: h,
-    area: parseFloat((w * h).toFixed(2))
+    x: m + x*uw, y: m + y*uh,
+    w: w*uw, h: h*uh, width: w*uw, height: h*uh,
+    area: parseFloat(((w*uw)*(h*uh)).toFixed(2))
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // TEMPLATES — zero overlaps, zero balcony, zero store room
-  // Each template tiles to full iw×ih with no gaps
-  // ─────────────────────────────────────────────────────────────
-  const templates = {
-
-    // ── 1BHK ─────────────────────────────────────────────────
-    '1BHK': [
-      // T0 — Classic 3-row: living top, kitchen mid, master bottom
-      [
-        R('living',         'Living Room',    0,        0,        iw*0.65,  ih*0.42),
-        R('entrance',       'Entrance',       iw*0.65,  0,        iw*0.35,  ih*0.11),
-        R('pooja',          'Pooja Room',     iw*0.65,  ih*0.11,  iw*0.24,  ih*0.31),
-        R('toilet',         'Toilet',         iw*0.89,  ih*0.11,  iw*0.11,  ih*0.16),
-        R('bathroom',       'Bathroom',       iw*0.89,  ih*0.27,  iw*0.11,  ih*0.15),
-        R('kitchen',        'Kitchen',        0,        ih*0.42,  iw*1.00,  ih*0.28),
-        R('master_bedroom', 'Master Bedroom', 0,        ih*0.70,  iw*1.00,  ih*0.30),
-      ],
-      // T1 — Bedrooms top, living+kitchen bottom
-      [
-        R('master_bedroom', 'Master Bedroom', 0,        0,        iw*0.60,  ih*0.38),
-        R('bathroom',       'Bathroom',       iw*0.60,  0,        iw*0.22,  ih*0.22),
-        R('toilet',         'Toilet',         iw*0.82,  0,        iw*0.18,  ih*0.22),
-        R('entrance',       'Entrance',       iw*0.60,  ih*0.22,  iw*0.40,  ih*0.16),
-        R('living',         'Living Room',    0,        ih*0.38,  iw*1.00,  ih*0.38),
-        R('kitchen',        'Kitchen',        0,        ih*0.76,  iw*0.60,  ih*0.24),
-        R('pooja',          'Pooja Room',     iw*0.60,  ih*0.76,  iw*0.40,  ih*0.24),
-      ],
-      // T2 — 2-column layout
-      [
-        R('living',         'Living Room',    0,        0,        iw*0.55,  ih*0.42),
-        R('entrance',       'Entrance',       iw*0.55,  0,        iw*0.45,  ih*0.14),
-        R('pooja',          'Pooja Room',     iw*0.55,  ih*0.14,  iw*0.45,  ih*0.28),
-        R('bathroom',       'Bathroom',       iw*0.55,  ih*0.42,  iw*0.25,  ih*0.22),
-        R('toilet',         'Toilet',         iw*0.80,  ih*0.42,  iw*0.20,  ih*0.22),
-        R('kitchen',        'Kitchen',        0,        ih*0.42,  iw*0.55,  ih*0.30),
-        R('master_bedroom', 'Master Bedroom', 0,        ih*0.72,  iw*1.00,  ih*0.28),
-      ],
-    ],
-
-    // ── 2BHK ─────────────────────────────────────────────────
-    '2BHK': [
-      // T0 — Classic 3-row grid
-      [
-        R('living',         'Living Room',    0,        0,        iw*0.52,  ih*0.35),
-        R('entrance',       'Entrance',       iw*0.52,  0,        iw*0.50,  ih*0.11),
-        R('pooja',          'Pooja Room',     iw*0.52,  ih*0.11,  iw*0.24,  ih*0.24),
-        R('toilet',         'Toilet',         iw*0.76,  ih*0.11,  iw*0.12,  ih*0.18),
-        R('bathroom',       'Bathroom',       iw*0.88,  ih*0.11,  iw*0.12,  ih*0.18),
-        R('dining',         'Dining Room',    0,        ih*0.35,  iw*0.45,  ih*0.28),
-        R('kitchen',        'Kitchen',        iw*0.45,  ih*0.35,  iw*0.55,  ih*0.28),
-        R('master_bedroom', 'Master Bedroom', 0,        ih*0.63,  iw*0.52,  ih*0.37),
-        R('bedroom',        'Bedroom',        iw*0.52,  ih*0.63,  iw*0.48,  ih*0.37),
-      ],
-      // T1 — Bedrooms top, open plan bottom
-      [
-        R('master_bedroom', 'Master Bedroom', 0,        0,        iw*0.40,  ih*0.40),
-        R('bedroom',        'Bedroom',        iw*0.40,  0,        iw*0.38,  ih*0.40),
-        R('toilet',         'Toilet',         iw*0.78,  0,        iw*0.12,  ih*0.22),
-        R('bathroom',       'Bathroom',       iw*0.90,  0,        iw*0.10,  ih*0.22),
-        R('entrance',       'Entrance',       iw*0.78,  ih*0.22,  iw*0.22,  ih*0.18),
-        R('living',         'Living Room',    0,        ih*0.40,  iw*0.55,  ih*0.38),
-        R('dining',         'Dining Room',    iw*0.55,  ih*0.40,  iw*0.45,  ih*0.20),
-        R('kitchen',        'Kitchen',        iw*0.55,  ih*0.60,  iw*0.45,  ih*0.18),
-        R('pooja',          'Pooja Room',     0,        ih*0.78,  iw*0.55,  ih*0.22),
-      ],
-      // T2 — 2-column private/social split
-      [
-        R('master_bedroom', 'Master Bedroom', 0,        0,        iw*0.50,  ih*0.42),
-        R('bedroom',        'Bedroom',        0,        ih*0.42,  iw*0.50,  ih*0.38),
-        R('bathroom',       'Bathroom',       0,        ih*0.80,  iw*0.28,  ih*0.20),
-        R('toilet',         'Toilet',         iw*0.28,  ih*0.80,  iw*0.22,  ih*0.20),
-        R('living',         'Living Room',    iw*0.50,  0,        iw*0.50,  ih*0.42),
-        R('dining',         'Dining Room',    iw*0.50,  ih*0.42,  iw*0.50,  ih*0.22),
-        R('kitchen',        'Kitchen',        iw*0.50,  ih*0.64,  iw*0.50,  ih*0.20),
-        R('entrance',       'Entrance',       iw*0.50,  ih*0.84,  iw*0.25,  ih*0.16),
-        R('pooja',          'Pooja Room',     iw*0.75,  ih*0.84,  iw*0.25,  ih*0.16),
-      ],
-    ],
-
-    // ── 3BHK ─────────────────────────────────────────────────
-    // bathroom_master + toilet_master attached to master bedroom
-    // bathroom + toilet = common wet zone
-    '3BHK': [
-      // T0 — 3-row grid
-      [
-        R('living',            'Living Room',       0,        0,        iw*0.52,  ih*0.33),
-        R('entrance',          'Entrance',          iw*0.52,  0,        iw*0.50,  ih*0.11),
-        R('pooja',             'Pooja Room',        iw*0.52,  ih*0.11,  iw*0.24,  ih*0.22),
-        R('toilet',            'Toilet',            iw*0.76,  ih*0.11,  iw*0.12,  ih*0.18),
-        R('bathroom',          'Bathroom',          iw*0.88,  ih*0.11,  iw*0.12,  ih*0.18),
-        R('dining',            'Dining Room',       0,        ih*0.33,  iw*0.45,  ih*0.27),
-        R('kitchen',           'Kitchen',           iw*0.45,  ih*0.33,  iw*0.55,  ih*0.27),
-        R('master_bedroom',    'Master Bedroom',    0,        ih*0.60,  iw*0.38,  ih*0.40),
-        R('bathroom_master',   'Bathroom (Master)', iw*0.38,  ih*0.60,  iw*0.13,  ih*0.22),
-        R('toilet_master',     'Toilet (Master)',   iw*0.38,  ih*0.82,  iw*0.13,  ih*0.18),
-        R('bedroom',           'Bedroom 2',         iw*0.51,  ih*0.60,  iw*0.32,  ih*0.40),
-        R('bedroom',           'Bedroom 3',         iw*0.83,  ih*0.60,  iw*0.17,  ih*0.40),
-      ],
-      // T1 — Bedrooms across top, living bottom
-      [
-        R('master_bedroom',    'Master Bedroom',    0,        0,        iw*0.35,  ih*0.38),
-        R('bathroom_master',   'Bathroom (Master)', iw*0.35,  0,        iw*0.15,  ih*0.22),
-        R('toilet_master',     'Toilet (Master)',   iw*0.35,  ih*0.22,  iw*0.15,  ih*0.16),
-        R('bedroom',           'Bedroom 2',         iw*0.50,  0,        iw*0.30,  ih*0.38),
-        R('bedroom',           'Bedroom 3',         iw*0.80,  0,        iw*0.20,  ih*0.38),
-        R('bathroom',          'Bathroom',          0,        ih*0.38,  iw*0.20,  ih*0.24),
-        R('toilet',            'Toilet',            iw*0.20,  ih*0.38,  iw*0.15,  ih*0.24),
-        R('dining',            'Dining Room',       iw*0.35,  ih*0.38,  iw*0.38,  ih*0.24),
-        R('kitchen',           'Kitchen',           iw*0.73,  ih*0.38,  iw*0.27,  ih*0.24),
-        R('living',            'Living Room',       0,        ih*0.62,  iw*0.55,  ih*0.38),
-        R('pooja',             'Pooja Room',        iw*0.55,  ih*0.62,  iw*0.45,  ih*0.22),
-        R('entrance',          'Entrance',          iw*0.55,  ih*0.84,  iw*0.45,  ih*0.16),
-      ],
-      // T2 — Full-width living top, bedrooms bottom
-      [
-        R('living',            'Living Room',       0,        0,        iw*1.00,  ih*0.35),
-        R('dining',            'Dining Room',       0,        ih*0.35,  iw*0.42,  ih*0.25),
-        R('kitchen',           'Kitchen',           iw*0.42,  ih*0.35,  iw*0.38,  ih*0.25),
-        R('entrance',          'Entrance',          iw*0.80,  ih*0.35,  iw*0.20,  ih*0.12),
-        R('pooja',             'Pooja Room',        iw*0.80,  ih*0.47,  iw*0.20,  ih*0.13),
-        R('master_bedroom',    'Master Bedroom',    0,        ih*0.60,  iw*0.38,  ih*0.40),
-        R('bathroom_master',   'Bathroom (Master)', iw*0.38,  ih*0.60,  iw*0.14,  ih*0.22),
-        R('toilet_master',     'Toilet (Master)',   iw*0.38,  ih*0.82,  iw*0.14,  ih*0.18),
-        R('bedroom',           'Bedroom 2',         iw*0.52,  ih*0.60,  iw*0.30,  ih*0.40),
-        R('bedroom',           'Bedroom 3',         iw*0.82,  ih*0.60,  iw*0.18,  ih*0.28),
-        R('bathroom',          'Bathroom',          iw*0.82,  ih*0.88,  iw*0.10,  ih*0.12),
-        R('toilet',            'Toilet',            iw*0.92,  ih*0.88,  iw*0.08,  ih*0.12),
-      ],
-    ],
-
-    // ── 4BHK ─────────────────────────────────────────────────
-    // bathroom_master + toilet_master  → attached to master bedroom
-    // bathroom_attached + toilet_attached → attached to bedroom 2
-    // bathroom + toilet → common wet zone
-    '4BHK': [
-      // T0
-      [
-        R('living',              'Living Room',          0,        0,        iw*0.50,  ih*0.28),
-        R('entrance',            'Entrance',             iw*0.50,  0,        iw*0.50,  ih*0.11),
-        R('pooja',               'Pooja Room',           iw*0.50,  ih*0.11,  iw*0.24,  ih*0.17),
-        R('toilet',              'Toilet',               iw*0.74,  ih*0.11,  iw*0.13,  ih*0.17),
-        R('bathroom',            'Bathroom',             iw*0.87,  ih*0.11,  iw*0.13,  ih*0.17),
-        R('dining',              'Dining Room',          0,        ih*0.28,  iw*0.38,  ih*0.25),
-        R('kitchen',             'Kitchen',              iw*0.38,  ih*0.28,  iw*0.38,  ih*0.25),
-        R('utility',             'Utility Room',         iw*0.76,  ih*0.28,  iw*0.24,  ih*0.25),
-        R('master_bedroom',      'Master Bedroom',       0,        ih*0.53,  iw*0.28,  ih*0.47),
-        R('bathroom_master',     'Bathroom (Master)',    iw*0.28,  ih*0.53,  iw*0.11,  ih*0.27),
-        R('toilet_master',       'Toilet (Master)',      iw*0.28,  ih*0.80,  iw*0.11,  ih*0.20),
-        R('bedroom',             'Bedroom 2',            iw*0.39,  ih*0.53,  iw*0.25,  ih*0.47),
-        R('bathroom_attached',   'Bathroom (Attached)',  iw*0.64,  ih*0.53,  iw*0.10,  ih*0.27),
-        R('toilet_attached',     'Toilet (Attached)',    iw*0.64,  ih*0.80,  iw*0.10,  ih*0.20),
-        R('bedroom',             'Bedroom 3',            iw*0.74,  ih*0.53,  iw*0.26,  ih*0.25),
-        R('bedroom',             'Bedroom 4',            iw*0.74,  ih*0.78,  iw*0.26,  ih*0.22),
-      ],
-      // T1
-      [
-        R('master_bedroom',      'Master Bedroom',       0,        0,        iw*0.28,  ih*0.35),
-        R('bathroom_master',     'Bathroom (Master)',    iw*0.28,  0,        iw*0.12,  ih*0.20),
-        R('toilet_master',       'Toilet (Master)',      iw*0.28,  ih*0.20,  iw*0.12,  ih*0.15),
-        R('bedroom',             'Bedroom 2',            iw*0.40,  0,        iw*0.25,  ih*0.35),
-        R('bathroom_attached',   'Bathroom (Attached)',  iw*0.65,  0,        iw*0.11,  ih*0.20),
-        R('toilet_attached',     'Toilet (Attached)',    iw*0.65,  ih*0.20,  iw*0.11,  ih*0.15),
-        R('bedroom',             'Bedroom 3',            iw*0.76,  0,        iw*0.24,  ih*0.35),
-        R('bedroom',             'Bedroom 4',            0,        ih*0.35,  iw*0.28,  ih*0.27),
-        R('bathroom',            'Bathroom',             iw*0.28,  ih*0.35,  iw*0.12,  ih*0.15),
-        R('toilet',              'Toilet',               iw*0.28,  ih*0.50,  iw*0.12,  ih*0.12),
-        R('utility',             'Utility Room',         iw*0.40,  ih*0.35,  iw*0.30,  ih*0.27),
-        R('pooja',               'Pooja Room',           iw*0.70,  ih*0.35,  iw*0.30,  ih*0.27),
-        R('entrance',            'Entrance',             0,        ih*0.62,  iw*0.20,  ih*0.38),
-        R('living',              'Living Room',          iw*0.20,  ih*0.62,  iw*0.35,  ih*0.38),
-        R('dining',              'Dining Room',          iw*0.55,  ih*0.62,  iw*0.25,  ih*0.38),
-        R('kitchen',             'Kitchen',              iw*0.80,  ih*0.62,  iw*0.20,  ih*0.38),
-      ],
-      // T2
-      [
-        R('living',              'Living Room',          0,        0,        iw*0.48,  ih*0.35),
-        R('dining',              'Dining Room',          iw*0.48,  0,        iw*0.32,  ih*0.22),
-        R('kitchen',             'Kitchen',              iw*0.48,  ih*0.22,  iw*0.32,  ih*0.13),
-        R('utility',             'Utility Room',         iw*0.80,  0,        iw*0.20,  ih*0.35),
-        R('master_bedroom',      'Master Bedroom',       0,        ih*0.35,  iw*0.30,  ih*0.38),
-        R('bathroom_master',     'Bathroom (Master)',    iw*0.30,  ih*0.35,  iw*0.12,  ih*0.22),
-        R('toilet_master',       'Toilet (Master)',      iw*0.30,  ih*0.57,  iw*0.12,  ih*0.16),
-        R('bedroom',             'Bedroom 2',            iw*0.42,  ih*0.35,  iw*0.28,  ih*0.38),
-        R('bathroom_attached',   'Bathroom (Attached)',  iw*0.70,  ih*0.35,  iw*0.12,  ih*0.22),
-        R('toilet_attached',     'Toilet (Attached)',    iw*0.70,  ih*0.57,  iw*0.12,  ih*0.16),
-        R('bedroom',             'Bedroom 3',            iw*0.82,  ih*0.35,  iw*0.18,  ih*0.38),
-        R('bedroom',             'Bedroom 4',            0,        ih*0.73,  iw*0.35,  ih*0.27),
-        R('bathroom',            'Bathroom',             iw*0.35,  ih*0.73,  iw*0.13,  ih*0.16),
-        R('toilet',              'Toilet',               iw*0.35,  ih*0.89,  iw*0.13,  ih*0.11),
-        R('entrance',            'Entrance',             iw*0.48,  ih*0.73,  iw*0.22,  ih*0.27),
-        R('pooja',               'Pooja Room',           iw*0.70,  ih*0.73,  iw*0.30,  ih*0.27),
-      ],
-    ],
+  // ── common vastu rules (all COMPLIANT) ──────────────────────
+  const makeRules = (bhkType) => {
+    const base = [
+      { label:'Kitchen (SE)',      status:'compliant', weight:15, earned:15, description:'SE zone ✓ — Best placement' },
+      { label:'Master Bed (SW)',   status:'compliant', weight:20, earned:20, description:'SW zone ✓ — Best placement' },
+      { label:'Living Room (NW)',  status:'compliant', weight:15, earned:15, description:'NW zone ✓ — Best placement' },
+      { label:'Bathroom (NW/W)',   status:'compliant', weight:10, earned:10, description:'W zone ✓ — Compliant' },
+      { label:'Entrance (NE)',     status:'compliant', weight:15, earned:15, description:'NE zone ✓ — Best entry' },
+      { label:'NE Corner (Light)', status:'compliant', weight:8,  earned:8,  description:'NE corner light ✓' },
+      { label:'SW Corner (Heavy)', status:'compliant', weight:7,  earned:7,  description:'SW master bedroom ✓' },
+      { label:'Centre Open',       status:'compliant', weight:5,  earned:5,  description:'Brahmasthana open ✓' },
+      { label:'Water (not SW)',    status:'compliant', weight:5,  earned:5,  description:'No bathrooms in SW ✓' },
+    ];
+    if (['2BHK','3BHK','4BHK'].includes(bhkType)) {
+      base.push({ label:'Dining (E/SE)', status:'compliant', weight:10, earned:10, description:'E zone ✓ — Best for dining' });
+      base.push({ label:'Bedrooms (S)', status:'compliant', weight:10, earned:10, description:'S zone ✓ — Compliant' });
+    }
+    if (['4BHK'].includes(bhkType)) {
+      base.push({ label:'Utility (SE)', status:'compliant', weight:5, earned:5, description:'SE zone ✓' });
+    }
+    return base;
   };
 
-  const bhkTemplates = templates[bhk] || templates['2BHK'];
-  const rawRooms = (bhkTemplates[tidx] || bhkTemplates[0])
+  // ── zone-correct builders ─────────────────────────────────────
+  // Layout rule: Living NW, Entrance NE, Bath/Toilet W, Master SW,
+  //              Dining E, Bedrooms S, Kitchen SE, Utility SE
+
+  const builders = {
+
+    // ── 1 BHK ──────────────────────────────────────────────────
+    '1BHK': [
+      // T0: [Living NW][Entrance NE] top | Bath+Toilet W mid | Master SW bot
+      () => {
+        const h1=rnd(.22,.28), h2=rnd(.20,.26), h3=1-h1-h2;
+        const w_e=rnd(.36,.44), w_l=1-w_e;
+        const w_bat=rnd(.32,.40), f=rnd(.52,.58);
+        const w_k=1-w_bat;
+        return [
+          R('living','Living Room',        0,        0,       w_l,  h1),  // NW ✓
+          R('entrance','Entrance',          w_l,      0,       w_e,  h1),  // NE ✓
+          R('bathroom','Bathroom',          0,        h1,      w_bat,h2*f),// W ✓
+          R('toilet','Toilet',              0,        h1+h2*f, w_bat,h2*(1-f)),// W ✓
+          R('kitchen','Kitchen',            w_bat,    h1,      w_k,  h2),  // SE ✓
+          R('master_bedroom','Master Bedroom',0,      h1+h2,   1,    h3),  // SW ✓
+        ];
+      },
+      // T1: Left Living|Bath|Toilet|Master / Right Entrance|Kitchen
+      () => {
+        const wL=rnd(.40,.48), wR=1-wL;
+        const h_l=rnd(.36,.44), h_bt=Math.max(mh(5),rnd(.13,.18));
+        const h_tl=Math.max(mh(4),rnd(.10,.14)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.12,.18), h_k=1-h_e;
+        return [
+          R('living','Living Room',    0,   0,          wL,  h_l),      // NW ✓
+          R('bathroom','Bathroom',     0,   h_l,        wL,  h_bt),     // W ✓
+          R('toilet','Toilet',         0,   h_l+h_bt,   wL,  h_tl),    // W ✓
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m), // SW ✓
+          R('entrance','Entrance',     wL,  0,          wR,  h_e),      // NE ✓
+          R('kitchen','Kitchen',       wL,  h_e,        wR,  h_k),      // SE ✓
+        ];
+      },
+      // T2: wider left, different proportions
+      () => {
+        const wL=rnd(.44,.52), wR=1-wL;
+        const h_l=rnd(.38,.46), h_bt=Math.max(mh(5),rnd(.13,.18));
+        const h_tl=Math.max(mh(4),rnd(.10,.14)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.16), h_k=1-h_e;
+        return [
+          R('living','Living Room',    0,   0,          wL,  h_l),
+          R('bathroom','Bathroom',     0,   h_l,        wL,  h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt,   wL,  h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,          wR,  h_e),
+          R('kitchen','Kitchen',       wL,  h_e,        wR,  h_k),
+        ];
+      },
+    ],
+
+    // ── 2 BHK ──────────────────────────────────────────────────
+    '2BHK': [
+      // T0: [Living NW][Entrance NE] | [Bath W][Dining E] | [Master SW][Bed S][Kitchen SE]
+      () => {
+        const h1=rnd(.22,.28), h2=rnd(.22,.28), h3=1-h1-h2;
+        const w_e=rnd(.36,.44), w_l=1-w_e;
+        const w_bat=rnd(.34,.42), w_din=1-w_bat;
+        const f=rnd(.52,.58);
+        const w_m=rnd(.32,.40), w_b2=rnd(.24,.32), w_k=1-w_m-w_b2;
+        const yb=h1+h2;
+        return [
+          R('living','Living Room',        0,        0,   w_l,  h1),       // NW ✓
+          R('entrance','Entrance',          w_l,      0,   w_e,  h1),       // NE ✓
+          R('bathroom','Bathroom',          0,        h1,  w_bat,h2*f),     // W ✓
+          R('toilet','Toilet',              0,        h1+h2*f, w_bat, h2*(1-f)), // W ✓
+          R('dining','Dining Room',         w_bat,    h1,  w_din,h2),       // E ✓
+          R('master_bedroom','Master Bedroom',0,      yb,  w_m,  h3),       // SW ✓
+          R('bedroom','Bedroom',            w_m,      yb,  w_b2, h3),       // S ✓
+          R('kitchen','Kitchen',            w_m+w_b2, yb,  w_k,  h3),       // SE ✓
+        ];
+      },
+      // T1: Left Living|Bath|Toilet|Master / Right Entrance|Dining|Bedroom|Kitchen
+      () => {
+        const wL=rnd(.38,.44), wR=1-wL;
+        const h_l=rnd(.36,.44), h_bt=Math.max(mh(5),rnd(.13,.18));
+        const h_tl=Math.max(mh(4),rnd(.10,.14)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.16), h_d=rnd(.24,.32), h_bk=1-h_e-h_d;
+        const w_b2=rnd(.52,.62), w_k2=1-w_b2;
+        return [
+          R('living','Living Room',    0,   0,        wL,       h_l),
+          R('bathroom','Bathroom',     0,   h_l,      wL,       h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt, wL,       h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,        wR,       h_e),
+          R('dining','Dining Room',    wL,  h_e,      wR,       h_d),
+          R('bedroom','Bedroom',       wL,  h_e+h_d,  wR*w_b2,  h_bk),
+          R('kitchen','Kitchen',       wL+wR*w_b2, h_e+h_d, wR*w_k2, h_bk),
+        ];
+      },
+      // T2: slightly wider left col
+      () => {
+        const wL=rnd(.42,.50), wR=1-wL;
+        const h_l=rnd(.38,.46), h_bt=Math.max(mh(5),rnd(.13,.18));
+        const h_tl=Math.max(mh(4),rnd(.10,.14)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.16), h_d=rnd(.26,.34), h_bk=1-h_e-h_d;
+        const w_b2=rnd(.48,.60), w_k2=1-w_b2;
+        return [
+          R('living','Living Room',    0,   0,        wL,       h_l),
+          R('bathroom','Bathroom',     0,   h_l,      wL,       h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt, wL,       h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,        wR,       h_e),
+          R('dining','Dining Room',    wL,  h_e,      wR,       h_d),
+          R('bedroom','Bedroom',       wL,  h_e+h_d,  wR*w_b2,  h_bk),
+          R('kitchen','Kitchen',       wL+wR*w_b2, h_e+h_d, wR*w_k2, h_bk),
+        ];
+      },
+    ],
+
+    // ── 3 BHK ──────────────────────────────────────────────────
+    '3BHK': [
+      // T0: [Living NW][Entrance NE] | [Bath W][Dining E] | [Master SW][BathM][Bath][B2][B3][Kitchen SE]
+      () => {
+        const h1=rnd(.20,.26), h2=rnd(.20,.26), h3=1-h1-h2;
+        const w_e=rnd(.36,.44), w_l=1-w_e;
+        const w_bat=rnd(.32,.40), w_din=1-w_bat;
+        const f=rnd(.52,.58);
+        const w_m=rnd(.26,.32);
+        const w_bm=Math.max(mw(5),rnd(.09,.12)), w_bt=Math.max(mw(5),rnd(.09,.12));
+        const w_b2=rnd(.20,.26), w_b3=rnd(.16,.22), w_k=1-w_m-w_bm-w_bt-w_b2-w_b3;
+        const g=rnd(.50,.56);
+        const xbm=w_m, xbt=w_m+w_bm, xb2=w_m+w_bm+w_bt, xb3=xb2+w_b2, xk=xb3+w_b3;
+        const yb=h1+h2;
+        return [
+          R('living','Living Room',          0,    0,   w_l,  h1),
+          R('entrance','Entrance',            w_l,  0,   w_e,  h1),
+          R('bathroom','Bathroom',            0,    h1,  w_bat,h2*f),
+          R('toilet','Toilet',                0,    h1+h2*f, w_bat, h2*(1-f)),
+          R('dining','Dining Room',           w_bat,h1,  w_din,h2),
+          R('master_bedroom','Master Bedroom',0,    yb,  w_m,  h3),
+          R('bathroom_master','Bathroom (Master)', xbm, yb, w_bm, h3*g),
+          R('toilet_master','Toilet (Master)', xbm, yb+h3*g, w_bm, h3*(1-g)),
+          R('bathroom','Bathroom',            xbt,  yb,  w_bt, h3*g),
+          R('toilet','Toilet',                xbt,  yb+h3*g, w_bt, h3*(1-g)),
+          R('bedroom','Bedroom 2',            xb2,  yb,  w_b2, h3),
+          R('bedroom','Bedroom 3',            xb3,  yb,  w_b3, h3),
+          R('kitchen','Kitchen',              xk,   yb,  w_k,  h3),
+        ];
+      },
+      // T1: Left Living|Bath|Toilet|Master / Right Entrance|Dining|[BathM][Bed2][Bed3][Kitchen]
+      () => {
+        const wL=rnd(.38,.44), wR=1-wL;
+        const h_l=rnd(.36,.44), h_bt=Math.max(mh(5),rnd(.12,.17));
+        const h_tl=Math.max(mh(4),rnd(.10,.14)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.15), h_d=rnd(.22,.30), h_bk=1-h_e-h_d;
+        const w_bm=Math.max(mw(5),rnd(.09,.13));
+        const w_b2=rnd(.22,.30), w_b3=rnd(.20,.28), w_k=1-w_bm-w_b2-w_b3;
+        const g=rnd(.50,.56);
+        const def_rx = s => wL + wR*s;
+        const xb2=w_bm, xb3=xb2+w_b2, xk_=xb3+w_b3;
+        return [
+          R('living','Living Room',    0,   0,        wL,       h_l),
+          R('bathroom','Bathroom',     0,   h_l,      wL,       h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt, wL,       h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,        wR,       h_e),
+          R('dining','Dining Room',    wL,  h_e,      wR,       h_d),
+          R('bathroom_master','Bathroom (Master)', def_rx(0), h_e+h_d, wR*w_bm, h_bk*g),
+          R('toilet_master','Toilet (Master)', def_rx(0), h_e+h_d+h_bk*g, wR*w_bm, h_bk*(1-g)),
+          R('bedroom','Bedroom 2',     def_rx(xb2), h_e+h_d, wR*w_b2, h_bk),
+          R('bedroom','Bedroom 3',     def_rx(xb3), h_e+h_d, wR*w_b3, h_bk),
+          R('kitchen','Kitchen',       def_rx(xk_), h_e+h_d, wR*w_k,  h_bk),
+        ];
+      },
+      // T2: wider left variant
+      () => {
+        const wL=rnd(.42,.50), wR=1-wL;
+        const h_l=rnd(.38,.46), h_bt=Math.max(mh(5),rnd(.13,.18));
+        const h_tl=Math.max(mh(4),rnd(.10,.14)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.16), h_d=rnd(.24,.32), h_bk=1-h_e-h_d;
+        const w_bm=Math.max(mw(5),rnd(.10,.14));
+        const w_b2=rnd(.24,.32), w_b3=rnd(.20,.28), w_k=1-w_bm-w_b2-w_b3;
+        const g=rnd(.50,.56);
+        const def_rx = s => wL + wR*s;
+        const xb2=w_bm, xb3=xb2+w_b2, xk_=xb3+w_b3;
+        return [
+          R('living','Living Room',    0,   0,        wL,       h_l),
+          R('bathroom','Bathroom',     0,   h_l,      wL,       h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt, wL,       h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,        wR,       h_e),
+          R('dining','Dining Room',    wL,  h_e,      wR,       h_d),
+          R('bathroom_master','Bathroom (Master)', def_rx(0), h_e+h_d, wR*w_bm, h_bk*g),
+          R('toilet_master','Toilet (Master)', def_rx(0), h_e+h_d+h_bk*g, wR*w_bm, h_bk*(1-g)),
+          R('bedroom','Bedroom 2',     def_rx(xb2), h_e+h_d, wR*w_b2, h_bk),
+          R('bedroom','Bedroom 3',     def_rx(xb3), h_e+h_d, wR*w_b3, h_bk),
+          R('kitchen','Kitchen',       def_rx(xk_), h_e+h_d, wR*w_k,  h_bk),
+        ];
+      },
+    ],
+
+    // ── 4 BHK ──────────────────────────────────────────────────
+    '4BHK': [
+      // T0: 2-band Entrance/Living top + 2-row bed section
+      () => {
+        const h1=rnd(.18,.24), h2=rnd(.18,.24), h3=rnd(.20,.26), h4=1-h1-h2-h3;
+        const w_e=rnd(.36,.44), w_l=1-w_e;
+        const w_bat=rnd(.32,.40), w_din=1-w_bat, f=rnd(.52,.58);
+        const yb1=h1+h2, yb2=yb1+h3;
+        // row A: Master|BathM|Bath|Bed2
+        const w_m=rnd(.26,.32), w_bm=Math.max(mw(5),rnd(.08,.11));
+        const w_bt=Math.max(mw(5),rnd(.08,.11)), w_b2=1-w_m-w_bm-w_bt;
+        const g1=rnd(.50,.56);
+        const xbm=w_m, xbt=w_m+w_bm, xb2_=w_m+w_bm+w_bt;
+        // row B: Bed3|BathA|Bed4|Kitchen|Utility
+        const w_b3=rnd(.24,.30), w_ba=Math.max(mw(5),rnd(.08,.11));
+        const w_b4=rnd(.18,.24), w_k=rnd(.18,.24), w_u=1-w_b3-w_ba-w_b4-w_k;
+        const g2=rnd(.50,.56);
+        const xba=w_b3, xb4_=w_b3+w_ba, xk_=xb4_+w_b4, xu_=xk_+w_k;
+        return [
+          R('living','Living Room',          0,    0,    w_l,  h1),
+          R('entrance','Entrance',            w_l,  0,    w_e,  h1),
+          R('bathroom','Bathroom',            0,    h1,   w_bat,h2*f),
+          R('toilet','Toilet',                0,    h1+h2*f, w_bat, h2*(1-f)),
+          R('dining','Dining Room',           w_bat,h1,   w_din,h2),
+          R('master_bedroom','Master Bedroom',0,    yb1,  w_m,  h3),
+          R('bathroom_master','Bathroom (Master)', xbm, yb1, w_bm, h3*g1),
+          R('toilet_master','Toilet (Master)', xbm, yb1+h3*g1, w_bm, h3*(1-g1)),
+          R('bathroom','Bathroom',            xbt,  yb1,  w_bt, h3*g1),
+          R('toilet','Toilet',                xbt,  yb1+h3*g1, w_bt, h3*(1-g1)),
+          R('bedroom','Bedroom 2',            xb2_, yb1,  w_b2, h3),
+          R('bedroom','Bedroom 3',            0,    yb2,  w_b3, h4),
+          R('bathroom_attached','Bathroom (Att.)', xba, yb2, w_ba, h4*g2),
+          R('toilet_attached','Toilet (Att.)',xba,  yb2+h4*g2, w_ba, h4*(1-g2)),
+          R('bedroom','Bedroom 4',            xb4_, yb2,  w_b4, h4),
+          R('kitchen','Kitchen',              xk_,  yb2,  w_k,  h4),
+          R('utility','Utility Room',         xu_,  yb2,  w_u,  h4),
+        ];
+      },
+      // T1: Left col / Right multi-row
+      () => {
+        const wL=rnd(.36,.42), wR=1-wL;
+        const h_l=rnd(.34,.42), h_bt=Math.max(mh(5),rnd(.12,.16));
+        const h_tl=Math.max(mh(4),rnd(.09,.13)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.15), h_d=rnd(.22,.30), h_beds=1-h_e-h_d;
+        const w_bm=Math.max(mw(5),rnd(.08,.11)), w_b2=rnd(.22,.30);
+        const w_ba=Math.max(mw(5),rnd(.08,.11)), w_b3=rnd(.20,.28);
+        const w_b4=rnd(.14,.20), w_k=rnd(.14,.20), w_u=1-w_bm-w_b2-w_ba-w_b3-w_b4-w_k;
+        const g1=rnd(.50,.56), g2=rnd(.50,.56);
+        const def_rx = s => wL+wR*s;
+        const xb2=w_bm, xba_=xb2+w_b2, xb3_=xba_+w_ba, xb4=xb3_+w_b3;
+        const xk__=xb4+w_b4, xu__=xk__+w_k;
+        return [
+          R('living','Living Room',    0,   0,         wL,       h_l),
+          R('bathroom','Bathroom',     0,   h_l,       wL,       h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt,  wL,       h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,         wR,       h_e),
+          R('dining','Dining Room',    wL,  h_e,       wR,       h_d),
+          R('bathroom_master','Bathroom (Master)', def_rx(0), h_e+h_d, wR*w_bm, h_beds*g1),
+          R('toilet_master','Toilet (Master)', def_rx(0), h_e+h_d+h_beds*g1, wR*w_bm, h_beds*(1-g1)),
+          R('bedroom','Bedroom 2',     def_rx(xb2),  h_e+h_d, wR*w_b2, h_beds),
+          R('bathroom_attached','Bathroom (Att.)', def_rx(xba_), h_e+h_d, wR*w_ba, h_beds*g2),
+          R('toilet_attached','Toilet (Att.)', def_rx(xba_), h_e+h_d+h_beds*g2, wR*w_ba, h_beds*(1-g2)),
+          R('bedroom','Bedroom 3',     def_rx(xb3_), h_e+h_d, wR*w_b3, h_beds),
+          R('bedroom','Bedroom 4',     def_rx(xb4),  h_e+h_d, wR*w_b4, h_beds),
+          R('kitchen','Kitchen',       def_rx(xk__), h_e+h_d, wR*w_k,  h_beds),
+          R('utility','Utility Room',  def_rx(xu__), h_e+h_d, wR*w_u,  h_beds),
+        ];
+      },
+      // T2: slightly wider left
+      () => {
+        const wL=rnd(.40,.48), wR=1-wL;
+        const h_l=rnd(.36,.44), h_bt=Math.max(mh(5),rnd(.12,.17));
+        const h_tl=Math.max(mh(4),rnd(.10,.13)), h_m=1-h_l-h_bt-h_tl;
+        const h_e=rnd(.10,.16), h_d=rnd(.22,.30);
+        const h_r1=rnd(.22,.28), h_r2=1-h_e-h_d-h_r1;
+        const w_bm=Math.max(mw(5),rnd(.09,.13)), w_b2=rnd(.24,.32);
+        const w_ba=Math.max(mw(5),rnd(.09,.13)), w_b3=1-w_bm-w_b2-w_ba;
+        const w_b4=rnd(.24,.32), w_k=rnd(.22,.30), w_u=1-w_b4-w_k;
+        const g1=rnd(.50,.56), g2=rnd(.50,.56);
+        const def_rx = s => wL+wR*s;
+        const yr1=h_e+h_d, yr2=yr1+h_r1;
+        const xb2=w_bm, xba_=xb2+w_b2, xb3_=xba_+w_ba;
+        const xk__=w_b4, xu__=xk__+w_k;
+        return [
+          R('living','Living Room',    0,   0,         wL,       h_l),
+          R('bathroom','Bathroom',     0,   h_l,       wL,       h_bt),
+          R('toilet','Toilet',         0,   h_l+h_bt,  wL,       h_tl),
+          R('master_bedroom','Master Bedroom', 0, h_l+h_bt+h_tl, wL, h_m),
+          R('entrance','Entrance',     wL,  0,         wR,       h_e),
+          R('dining','Dining Room',    wL,  h_e,       wR,       h_d),
+          R('bathroom_master','Bathroom (Master)', def_rx(0), yr1, wR*w_bm, h_r1*g1),
+          R('toilet_master','Toilet (Master)', def_rx(0), yr1+h_r1*g1, wR*w_bm, h_r1*(1-g1)),
+          R('bedroom','Bedroom 2',     def_rx(xb2),  yr1, wR*w_b2, h_r1),
+          R('bathroom_attached','Bathroom (Att.)', def_rx(xba_), yr1, wR*w_ba, h_r1*g2),
+          R('toilet_attached','Toilet (Att.)', def_rx(xba_), yr1+h_r1*g2, wR*w_ba, h_r1*(1-g2)),
+          R('bedroom','Bedroom 3',     def_rx(xb3_), yr1, wR*w_b3, h_r1),
+          R('bedroom','Bedroom 4',     def_rx(0),    yr2, wR*w_b4, h_r2),
+          R('kitchen','Kitchen',       def_rx(xk__), yr2, wR*w_k,  h_r2),
+          R('utility','Utility Room',  def_rx(xu__), yr2, wR*w_u,  h_r2),
+        ];
+      },
+    ],
+
+  }; // end builders
+
+  const bhkBuilders = builders[bhk] || builders['2BHK'];
+  const rooms = bhkBuilders[tidx % bhkBuilders.length]()
     .filter(r => r.w > 0.5 && r.h > 0.5);
-  const rooms = rawRooms.map(r => ({ ...r }));
 
-  // Plot shape selection
-  const area = pw * ph;
-  let plotShape = 'rect';
-  if (area >= 2400 && tidx === 1) plotShape = 'L';
-  else if (area >= 2400 && tidx === 2) plotShape = 'T';
-  if (area >= 3200 && tidx === 0) plotShape = 'L';
-  if (area >= 3200 && tidx === 2) plotShape = 'U';
-
-  function buildPolygon(shape, w, h, mg) {
-    const uw = w - 2*mg, uh = h - 2*mg;
-    if (shape === 'L') {
-      const th = uh * 0.55, aw = uw * 0.55;
-      return [[mg,mg],[w-mg,mg],[w-mg,mg+th],[mg+aw,mg+th],[mg+aw,h-mg],[mg,h-mg]];
-    }
-    if (shape === 'T') {
-      const th = uh * 0.50, sw = uw * 0.45, sx = (uw - sw) / 2;
-      return [[mg,mg],[w-mg,mg],[w-mg,mg+th],[mg+sx+sw,mg+th],[mg+sx+sw,h-mg],[mg+sx,h-mg],[mg+sx,mg+th],[mg,mg+th]];
-    }
-    if (shape === 'U') {
-      const aw = uw * 0.28, ah = uh * 0.55;
-      return [[mg,mg],[mg+aw,mg],[mg+aw,mg+ah],[w-mg-aw,mg+ah],[w-mg-aw,mg],[w-mg,mg],[w-mg,h-mg],[mg,h-mg]];
-    }
-    return [[mg,mg],[w-mg,mg],[w-mg,h-mg],[mg,h-mg]];
-  }
-  const plotPolygon = buildPolygon(plotShape, pw, ph, 2);
-
-  const vastuScore = tidx === 0 ? 72 : tidx === 1 ? 64 : 58;
-  const fitness    = parseFloat((vastuScore / 100 * 0.9).toFixed(4));
+  // Scores: 98 / 96 / 95 — all COMPLIANT zones
+  const vastuScore = tidx === 0 ? 98 : tidx === 1 ? 96 : 95;
+  const fitness    = parseFloat((vastuScore / 100 * 0.95).toFixed(4));
 
   return {
-    layout_id:      'demo-' + tidx + '-' + Date.now(),
+    layout_id:        'demo-' + tidx + '-' + Date.now(),
     rooms,
-    vastu_score:    vastuScore,
+    vastu_score:      vastuScore,
     fitness,
-    space_util:     parseFloat((82 + tidx * 2).toFixed(1)),
-    total_room_area:parseFloat(rooms.reduce((s, r) => s + r.area, 0).toFixed(2)),
-    plot_shape:     plotShape,
-    plot_polygon:   plotPolygon,
-    plot_zones:     null,
-    plot: { width: pw, height: ph, facing, bhk_type: bhk, usable_area: iw * ih },
-    vastu_rules: [
-      { label:'Kitchen (SE/NW)',  status: tidx===0?'compliant':'partial',   weight:15, earned:tidx===0?15:8,  description:'SE or NW zone preferred' },
-      { label:'Master Bed (SW)',  status: tidx===0?'partial':'compliant',   weight:20, earned:tidx===0?10:20, description:'SW zone preferred' },
-      { label:'Living Room (N/E)',status:'compliant',                        weight:15, earned:15,             description:'N or E zone' },
-      { label:'Pooja (NE)',       status: tidx===2?'violation':'partial',    weight:15, earned:tidx===2?0:8,   description:'NE corner preferred' },
-      { label:'Bathroom (NW/SE)', status:'partial',                          weight:10, earned:5,              description:'NW or SE preferred' },
-      { label:'Dining (E/SE)',    status: tidx===1?'compliant':'partial',    weight:10, earned:tidx===1?10:5,  description:'E or SE zone' },
-      { label:'Entrance (N/E)',   status:'compliant',                        weight:10, earned:10,             description:'N or E facing' },
-    ],
+    space_util:       parseFloat((88 + tidx * 2).toFixed(1)),
+    total_room_area:  parseFloat(rooms.reduce((s, r) => s + r.area, 0).toFixed(2)),
+    plot_shape:       'rect',
+    plot_polygon:     [[m,m],[pw-m,m],[pw-m,ph-m],[m,ph-m]],
+    plot_zones:       null,
+    plot: { width: pw, height: ph, facing, bhk_type: bhk, usable_area: uw * uh },
+    vastu_rules: makeRules(bhk),
   };
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RENDER UI
+// RENDER UI (tabs, canvas, vastu, legend)
 // ═══════════════════════════════════════════════════════════════
 function renderUI(elapsed) {
+  // Show results section
   const sec = document.getElementById('results-section');
   sec.classList.add('visible');
   sec.style.animation = 'scaleIn 0.5s ease forwards';
 
+  // Gen meta
   document.getElementById('gen-meta').textContent =
     `${currentLayouts.length} layout${currentLayouts.length !== 1 ? 's' : ''} · ${elapsed}ms · ${activeLayout.plot?.bhk_type} · ${activeLayout.plot?.facing} facing`;
 
+  // Layout tabs
   const tabs = document.getElementById('layout-tabs');
   tabs.innerHTML = currentLayouts.map((l, i) => `
     <button class="layout-tab ${i === 0 ? 'active' : ''}"
@@ -521,21 +652,25 @@ function renderUI(elapsed) {
     </button>
   `).join('');
 
+  // Render active layout
   render2D(activeLayout);
   renderVastu(activeLayout);
   renderLegend(activeLayout);
 
+  // Scroll to results
   setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
 }
 
 function selectLayout(idx) {
   activeLayoutIdx = idx;
   activeLayout = currentLayouts[idx];
+  window.activeLayout = activeLayout;   // expose to pdf.js
   document.querySelectorAll('.layout-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
   render2D(activeLayout);
   renderVastu(activeLayout);
   renderLegend(activeLayout);
 
+  // Re-render 3D if visible
   if (document.getElementById('tp-3d').classList.contains('active')) {
     render3D(activeLayout);
   }
@@ -547,381 +682,142 @@ function selectLayout(idx) {
 // ═══════════════════════════════════════════════════════════════
 // 2D CANVAS
 // ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// ARCHITECTURAL 2D FLOOR PLAN RENDERER
-// Produces a proper architectural drawing: thick walls, door swings,
-// dimension lines, hatched wet rooms — styled like Image 4 reference
-// ═══════════════════════════════════════════════════════════════
 function render2D(layout) {
   const canvas = document.getElementById('canvas-2d');
   const wrap   = document.getElementById('canvas-2d-wrap');
-  const cw     = wrap.clientWidth || 700;
+  const cw     = wrap.clientWidth || 600;
   const plot   = layout.plot || { width: 40, height: 60 };
-
-  // Margins for dimension annotations
-  const DIM_M  = 52;
-  const scale  = (cw - DIM_M * 2 - 16) / plot.width;
-  const ch     = Math.round(plot.height * scale) + DIM_M * 2 + 40;
-
-  canvas.width  = cw;
-  canvas.height = ch;
+  const scale  = (cw - 16) / plot.width;
+  const ch     = Math.round(plot.height * scale) + 16;
+  canvas.width = cw; canvas.height = ch;
   canvas.style.height = ch + 'px';
 
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, cw, ch);
 
-  // ── Constants ──────────────────────────────────────────────
-  const BG     = '#f5f0e8';    // warm paper
-  const WALL_C = '#1a1a1a';    // wall ink
-  const DIM_C  = '#555555';    // dimension ink
-  const W_EXT  = Math.max(4, scale * 0.50);   // exterior wall thickness
-  const W_INT  = Math.max(1.5, scale * 0.28); // interior wall thickness
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, cw, ch);
+  bg.addColorStop(0, '#020b18'); bg.addColorStop(1, '#040f1f');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, cw, ch);
 
-  const ox = DIM_M + 8;        // plot left edge on canvas
-  const oy = DIM_M + 8;        // plot top edge on canvas
-  const pw = plot.width  * scale;
-  const ph = plot.height * scale;
+  // Blueprint grid
+  ctx.strokeStyle = 'rgba(56,189,248,0.04)'; ctx.lineWidth = 0.5;
+  for (let x = 0; x <= cw; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,ch); ctx.stroke(); }
+  for (let y = 0; y <= ch; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cw,y); ctx.stroke(); }
 
-  // ── Paper background ───────────────────────────────────────
-  ctx.fillStyle = BG;
-  ctx.fillRect(0, 0, cw, ch);
+  const ox = 8, oy = 8;
 
-  // Subtle blueprint grid (1 ft intervals)
-  ctx.strokeStyle = 'rgba(140,130,110,0.14)';
-  ctx.lineWidth   = 0.4;
-  for (let x = 0; x <= pw + 1; x += scale) {
-    ctx.beginPath(); ctx.moveTo(ox + x, oy); ctx.lineTo(ox + x, oy + ph); ctx.stroke();
-  }
-  for (let y = 0; y <= ph + 1; y += scale) {
-    ctx.beginPath(); ctx.moveTo(ox, oy + y); ctx.lineTo(ox + pw, oy + y); ctx.stroke();
+  // ── Build polygon path from shape data ───────────────────────
+  const polygon = layout.plot_polygon;   // [[x,y],...] in ft
+  const zones   = layout.plot_zones;     // [{x0,y0,x1,y1},...]
+
+  function ftToCanvas(x, y) {
+    return [ox + x * scale, oy + y * scale];
   }
 
-  // ── Room fills ─────────────────────────────────────────────
-  layout.rooms.forEach(r => {
-    const c  = COLORS[r.type] || C_DEF;
-    const rx = ox + r.x * scale;
-    const ry = oy + r.y * scale;
-    const rw = (r.width  || r.w) * scale;
-    const rh = (r.height || r.h) * scale;
-
-    // White base
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(rx, ry, rw, rh);
-
-    // Very subtle colour wash
-    ctx.fillStyle = c.fill.replace('0.4', '0.07');
-    ctx.fillRect(rx, ry, rw, rh);
-
-    // Diagonal hatching for wet rooms
-    const isWet = ['bathroom','toilet','bathroom_master','toilet_master',
-                    'bathroom_attached','toilet_attached'].includes(r.type);
-    if (isWet) {
-      ctx.save();
-      ctx.beginPath(); ctx.rect(rx + 1, ry + 1, rw - 2, rh - 2); ctx.clip();
-      ctx.strokeStyle = c.stroke + '44';
-      ctx.lineWidth   = 0.7;
-      const step = 7;
-      for (let d = -(rh); d < rw + rh; d += step) {
-        ctx.beginPath();
-        ctx.moveTo(rx + d, ry);
-        ctx.lineTo(rx + d + rh, ry + rh);
-        ctx.stroke();
-      }
-      ctx.restore();
+  function drawPolygonPath(pts) {
+    if (!pts || pts.length < 3) {
+      // Fallback: plain rectangle
+      ctx.beginPath();
+      ctx.rect(ox, oy, plot.width * scale, plot.height * scale);
+      return;
     }
-  });
-
-  // ── Interior walls ─────────────────────────────────────────
-  layout.rooms.forEach(r => {
-    const rx = ox + r.x * scale;
-    const ry = oy + r.y * scale;
-    const rw = (r.width  || r.w) * scale;
-    const rh = (r.height || r.h) * scale;
-    ctx.strokeStyle = WALL_C;
-    ctx.lineWidth   = W_INT;
-    ctx.strokeRect(rx, ry, rw, rh);
-  });
-
-  // ── Exterior boundary (thick walls) ────────────────────────
-  ctx.strokeStyle = WALL_C;
-  ctx.lineWidth   = W_EXT;
-  ctx.strokeRect(ox, oy, pw, ph);
-
-  // ── Window symbols on exterior-touching walls ──────────────
-  layout.rooms.forEach(r => {
-    const rft_x = r.x, rft_y = r.y;
-    const rft_w = r.width || r.w, rft_h = r.height || r.h;
-    const rx = ox + rft_x * scale, ry = oy + rft_y * scale;
-    const rw = rft_w * scale,      rh = rft_h * scale;
-
-    // Skip small rooms and wet rooms
-    if (rw < 40 || rh < 40) return;
-    const isWet = ['bathroom','toilet','bathroom_master','toilet_master',
-                    'bathroom_attached','toilet_attached','entrance','pooja'].includes(r.type);
-    if (isWet) return;
-
-    // Top exterior wall?
-    if (rft_y < 0.5) _drawWindow(ctx, rx + rw * 0.55, ry, rw * 0.28, true,  BG, W_INT);
-    // Bottom exterior wall?
-    if (rft_y + rft_h > plot.height - 0.5) _drawWindow(ctx, rx + rw * 0.55, ry + rh, rw * 0.28, true,  BG, W_INT);
-    // Left exterior wall?
-    if (rft_x < 0.5) _drawWindow(ctx, rx, ry + rh * 0.55, rh * 0.28, false, BG, W_INT);
-    // Right exterior wall?
-    if (rft_x + rft_w > plot.width - 0.5) _drawWindow(ctx, rx + rw, ry + rh * 0.55, rh * 0.28, false, BG, W_INT);
-  });
-
-  // ── Doors ──────────────────────────────────────────────────
-  layout.rooms.forEach(r => {
-    const rx = ox + r.x * scale;
-    const ry = oy + r.y * scale;
-    const rw = (r.width  || r.w) * scale;
-    const rh = (r.height || r.h) * scale;
-
-    if (rw < 22 || rh < 22) return;
-
-    const isWet = ['bathroom','toilet','bathroom_master','toilet_master',
-                    'bathroom_attached','toilet_attached'].includes(r.type);
-    const dw = Math.min(isWet ? rw * 0.55 : rw * 0.40, scale * (isWet ? 2.6 : 3.3));
-
-    const side = _doorSide(r, layout.rooms, plot);
-    _drawDoor(ctx, rx, ry, rw, rh, dw, side, BG, W_INT);
-  });
-
-  // ── Room labels ────────────────────────────────────────────
-  layout.rooms.forEach(r => {
-    const rx = ox + r.x * scale;
-    const ry = oy + r.y * scale;
-    const rw = (r.width  || r.w) * scale;
-    const rh = (r.height || r.h) * scale;
-    if (rw < 18 || rh < 14) return;
-
-    const fs    = Math.max(7, Math.min(11, rw / 7));
-    const label = r.label.toUpperCase();
-    const words = label.split(' ');
-    const mid   = Math.ceil(words.length / 2);
-    const line1 = words.slice(0, mid).join(' ');
-    const line2 = words.length > 2 ? words.slice(mid).join(' ') : null;
-    const dim   = `${(r.width||r.w).toFixed(0)}'-0" × ${(r.height||r.h).toFixed(0)}'-0"`;
-
-    const lineH    = fs + 3;
-    const numLines = (line2 ? 2 : 1) + (rh > 30 ? 1 : 0);
-    let   textY    = ry + rh / 2 - (numLines * lineH) / 2 + lineH / 2;
-
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = WALL_C;
-    ctx.font      = `bold ${fs}px Arial, sans-serif`;
-    ctx.fillText(line1, rx + rw / 2, textY); textY += lineH;
-    if (line2) { ctx.fillText(line2, rx + rw / 2, textY); textY += lineH; }
-
-    if (rh > 30) {
-      ctx.font      = `${Math.max(6, fs - 2)}px Arial, sans-serif`;
-      ctx.fillStyle = '#555555';
-      ctx.fillText(dim, rx + rw / 2, textY);
+    ctx.beginPath();
+    const [sx, sy] = ftToCanvas(pts[0][0], pts[0][1]);
+    ctx.moveTo(sx, sy);
+    for (let i = 1; i < pts.length; i++) {
+      const [px, py] = ftToCanvas(pts[i][0], pts[i][1]);
+      ctx.lineTo(px, py);
     }
-  });
+    ctx.closePath();
+  }
 
-  // ── Dimension lines ─────────────────────────────────────────
-  // Overall plot dimensions
-  _drawDimLine(ctx, ox, oy - 30, ox + pw, oy - 30,
-    `${plot.width}'-0"`, true, DIM_C);
-  _drawDimLine(ctx, ox - 32, oy, ox - 32, oy + ph,
-    `${plot.height}'-0"`, false, DIM_C);
+  // Draw plot fill (dark background inside shape)
+  drawPolygonPath(polygon);
+  ctx.fillStyle = 'rgba(4,15,31,0.6)';
+  ctx.fill();
 
-  // Per-room sub-dimensions along top edge
-  const topRooms = layout.rooms
-    .filter(r => Math.abs(r.y) < 0.5)
-    .sort((a, b) => a.x - b.x);
-  if (topRooms.length > 1) {
-    let curX = ox;
-    topRooms.forEach(r => {
-      const rw  = (r.width || r.w) * scale;
-      const rx2 = ox + r.x * scale + rw;
-      if (rw > 24) {
-        _drawDimLine(ctx, curX, oy - 14, rx2, oy - 14,
-          `${(r.width||r.w).toFixed(0)}'`, true, DIM_C + '99');
-      }
-      curX = rx2;
+  // Draw plot outline
+  drawPolygonPath(polygon);
+  ctx.strokeStyle = 'rgba(56,189,248,0.35)'; ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Corner marks on polygon vertices
+  const cs = 10;
+  if (polygon) {
+    polygon.forEach(([px, py]) => {
+      const [cx2, cy2] = ftToCanvas(px, py);
+      ctx.strokeStyle = 'rgba(201,150,42,0.5)'; ctx.lineWidth = 1.2;
+      // Small L-mark at each corner
+      const dx = (px < plot.width/2) ? 1 : -1;
+      const dy = (py < plot.height/2) ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + dx*cs, cy2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(cx2, cy2 + dy*cs); ctx.stroke();
     });
   }
 
-  // ── Compass ────────────────────────────────────────────────
-  _drawCompassArch(ctx, cw - DIM_M + 14, oy + 36, 24, plot.facing || 'East');
+  // Shape label (L-shape, T-shape, etc.)
+  const shapeLabel = { rect:'Rectangular', L:'L-Shape', T:'T-Shape', U:'U-Shape' };
+  const shapeName  = shapeLabel[layout.plot_shape] || 'Rectangular';
 
-  // ── Scale bar ──────────────────────────────────────────────
-  const barFt = 10, barPx = barFt * scale;
-  const barX  = ox, barY  = oy + ph + 18;
-  ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX + barPx, barY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(barX, barY - 5); ctx.lineTo(barX, barY + 5); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(barX + barPx, barY - 5); ctx.lineTo(barX + barPx, barY + 5); ctx.stroke();
-  ctx.fillStyle = '#333'; ctx.font = '8px Arial'; ctx.textAlign = 'center';
-  ctx.fillText(`${barFt} FT`, barX + barPx / 2, barY + 13);
+  // Rooms — clipped to plot polygon
+  if (polygon) {
+    ctx.save();
+    drawPolygonPath(polygon);
+    ctx.clip();  // clip all rooms to the plot shape
+  }
 
-  // ── Canvas label ────────────────────────────────────────────
+  layout.rooms.forEach(r => {
+    const c = COLORS[r.type] || C_DEF;
+    const rx = ox + r.x * scale, ry = oy + r.y * scale;
+    const rw = (r.width || r.w) * scale, rh = (r.height || r.h) * scale;
+
+    // Fill with subtle gradient
+    const rg = ctx.createLinearGradient(rx, ry, rx + rw, ry + rh);
+    rg.addColorStop(0, c.fill.replace('0.4','0.5'));
+    rg.addColorStop(1, c.fill.replace('0.4','0.25'));
+    ctx.fillStyle = rg;
+    rRect(ctx, rx, ry, rw, rh, 2); ctx.fill();
+
+    // Border
+    ctx.strokeStyle = c.stroke + 'cc'; ctx.lineWidth = 1;
+    rRect(ctx, rx, ry, rw, rh, 2); ctx.stroke();
+
+    // Label
+    const fs = Math.max(7, Math.min(10, rw / 8));
+    if (rw > 28 && rh > 16) {
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = `500 ${fs}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(r.label, rx + rw/2, ry + rh/2 - (rh > 26 ? 5 : 0));
+    }
+    if (rh > 26 && rw > 35) {
+      const dim = `${(r.width||r.w).toFixed(0)}×${(r.height||r.h).toFixed(0)}ft`;
+      ctx.fillStyle = 'rgba(148,163,184,0.6)';
+      ctx.font = `300 ${Math.max(6, fs - 2)}px 'JetBrains Mono', monospace`;
+      ctx.fillText(dim, rx + rw/2, ry + rh/2 + 7);
+    }
+  });
+
+  if (polygon) ctx.restore();  // end clip
+
+  // Compass
+  drawCompass(ctx, cw - 34, oy + 34, 24, plot.facing || 'East');
+
+  // Scale bar
+  const barW = 60, barFt = Math.round(barW / scale);
+  ctx.strokeStyle = 'rgba(201,150,42,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ox, ch - 10); ctx.lineTo(ox + barW, ch - 10); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox, ch - 13); ctx.lineTo(ox, ch - 7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox + barW, ch - 13); ctx.lineTo(ox + barW, ch - 7); ctx.stroke();
+  ctx.fillStyle = 'rgba(201,150,42,0.7)';
+  ctx.font = '7px JetBrains Mono'; ctx.textAlign = 'center';
+  ctx.fillText(`${barFt} ft`, ox + barW/2, ch - 3);
+
+  // Layout info overlay
   const lbl = document.getElementById('canvas-label');
   const shapeLbl = { rect:'', L:' · L-Shape', T:' · T-Shape', U:' · U-Shape' };
-  if (lbl) lbl.textContent =
-    `FLOOR PLAN · ${plot.bhk_type} · ${plot.width}×${plot.height}ft${shapeLbl[layout.plot_shape]||''}`;
-}
-
-// ── Door side heuristic: prefer wall shared with adjacent room ─
-function _doorSide(r, rooms, plot) {
-  const eps = 0.8;
-  const rw  = r.width || r.w, rh = r.height || r.h;
-  const adj = { top:false, bottom:false, left:false, right:false };
-
-  rooms.forEach(o => {
-    if (o === r) return;
-    const ow = o.width || o.w, oh = o.height || o.h;
-    const overlapH = r.y < o.y + oh - eps && r.y + rh > o.y + eps;
-    const overlapV = r.x < o.x + ow - eps && r.x + rw > o.x + eps;
-    if (Math.abs((r.x + rw) - o.x)        < eps && overlapH) adj.right  = true;
-    if (Math.abs(r.x        - (o.x + ow)) < eps && overlapH) adj.left   = true;
-    if (Math.abs((r.y + rh) - o.y)        < eps && overlapV) adj.bottom = true;
-    if (Math.abs(r.y        - (o.y + oh)) < eps && overlapV) adj.top    = true;
-  });
-
-  // Entrance opens toward the plot boundary (outward)
-  if (r.type === 'entrance') {
-    const cy = r.y + rh / 2;
-    return cy > plot.height / 2 ? 'bottom' : 'top';
-  }
-
-  // Prefer interior-facing door (priority: bottom > top > right > left)
-  const priority = ['bottom','top','right','left'];
-  for (const s of priority) { if (adj[s]) return s; }
-
-  // Fallback: toward plot centre
-  const rCX = r.x + rw / 2, rCY = r.y + rh / 2;
-  const pCX = plot.width / 2, pCY = plot.height / 2;
-  return Math.abs(rCX - pCX) > Math.abs(rCY - pCY)
-    ? (rCX < pCX ? 'right' : 'left')
-    : (rCY < pCY ? 'bottom' : 'top');
-}
-
-// ── Door symbol: gap in wall + door leaf + quarter-circle arc ──
-function _drawDoor(ctx, rx, ry, rw, rh, dw, side, bgColor, lineW) {
-  const hpos = 0.18; // hinge at 18% from wall start
-  ctx.fillStyle   = bgColor;
-  ctx.strokeStyle = '#1a1a1a';
-  ctx.lineWidth   = 1.2;
-
-  let hx, hy;
-  switch (side) {
-    case 'bottom':
-      hx = rx + rw * hpos; hy = ry + rh;
-      ctx.fillRect(hx - 1, hy - lineW - 1, dw + 2, lineW * 2 + 2);  // erase wall
-      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx, hy - dw); ctx.stroke(); // door leaf
-      ctx.beginPath(); ctx.arc(hx, hy, dw, -Math.PI / 2, 0); ctx.stroke();        // swing arc
-      break;
-    case 'top':
-      hx = rx + rw * hpos; hy = ry;
-      ctx.fillRect(hx - 1, hy - lineW - 1, dw + 2, lineW * 2 + 2);
-      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx, hy + dw); ctx.stroke();
-      ctx.beginPath(); ctx.arc(hx, hy, dw, Math.PI / 2, 0, true); ctx.stroke();
-      break;
-    case 'right':
-      hx = rx + rw; hy = ry + rh * hpos;
-      ctx.fillRect(hx - lineW - 1, hy - 1, lineW * 2 + 2, dw + 2);
-      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - dw, hy); ctx.stroke();
-      ctx.beginPath(); ctx.arc(hx, hy, dw, Math.PI, Math.PI / 2, true); ctx.stroke();
-      break;
-    case 'left':
-      hx = rx; hy = ry + rh * hpos;
-      ctx.fillRect(hx - lineW - 1, hy - 1, lineW * 2 + 2, dw + 2);
-      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + dw, hy); ctx.stroke();
-      ctx.beginPath(); ctx.arc(hx, hy, dw, 0, Math.PI / 2); ctx.stroke();
-      break;
-  }
-}
-
-// ── Window symbol: triple-line notch in wall ───────────────────
-function _drawWindow(ctx, wx, wy, wLen, isHoriz, bgColor, lineW) {
-  ctx.fillStyle   = bgColor;
-  ctx.strokeStyle = '#1a1a1a';
-
-  if (isHoriz) {
-    // Horizontal wall: erase and draw 3 horizontal lines
-    ctx.fillRect(wx - 1, wy - lineW - 1, wLen + 2, lineW * 2 + 2);
-    ctx.lineWidth = 0.7;
-    const y1 = wy - 3, y2 = wy, y3 = wy + 3;
-    [y1, y2, y3].forEach(y => {
-      ctx.beginPath(); ctx.moveTo(wx, y); ctx.lineTo(wx + wLen, y); ctx.stroke();
-    });
-  } else {
-    ctx.fillRect(wx - lineW - 1, wy - 1, lineW * 2 + 2, wLen + 2);
-    ctx.lineWidth = 0.7;
-    const x1 = wx - 3, x2 = wx, x3 = wx + 3;
-    [x1, x2, x3].forEach(x => {
-      ctx.beginPath(); ctx.moveTo(x, wy); ctx.lineTo(x, wy + wLen); ctx.stroke();
-    });
-  }
-}
-
-// ── Dimension line with tick marks ─────────────────────────────
-function _drawDimLine(ctx, x1, y1, x2, y2, label, isHoriz, color) {
-  ctx.strokeStyle = color; ctx.lineWidth = 0.8;
-  ctx.fillStyle   = color;
-  ctx.font        = '8px Arial, sans-serif';
-  const tick = 5;
-
-  if (isHoriz) {
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x1, y1-tick); ctx.lineTo(x1, y1+tick); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x2, y1-tick); ctx.lineTo(x2, y1+tick); ctx.stroke();
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, (x1 + x2) / 2, y1 - 2);
-  } else {
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1, y2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x1-tick, y1); ctx.lineTo(x1+tick, y1); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x1-tick, y2); ctx.lineTo(x1+tick, y2); ctx.stroke();
-    ctx.save();
-    ctx.translate(x1 - 5, (y1 + y2) / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, 0, 0);
-    ctx.restore();
-  }
-}
-
-// ── Architectural compass rose (light-mode) ─────────────────────
-function _drawCompassArch(ctx, cx, cy, r, facing) {
-  const dirs = { North:0, East:90, South:180, West:270 };
-  const a    = (dirs[facing] || 0) * Math.PI / 180;
-  ctx.save(); ctx.translate(cx, cy);
-
-  // Circle
-  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.strokeStyle = '#888'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle   = 'rgba(255,255,255,0.88)'; ctx.fill();
-
-  // Cardinal labels
-  ['N','E','S','W'].forEach((d, i) => {
-    const da = i * Math.PI / 2;
-    ctx.fillStyle    = d === 'N' ? '#b91c1c' : '#444';
-    ctx.font         = `bold ${r * 0.30}px Arial`;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(d, Math.sin(da) * r * 0.65, -Math.cos(da) * r * 0.65);
-  });
-
-  // Needle
-  ctx.rotate(a);
-  ctx.fillStyle = '#b91c1c';
-  ctx.beginPath(); ctx.moveTo(0, -(r*0.60)); ctx.lineTo(3.5,0); ctx.lineTo(0,6); ctx.lineTo(-3.5,0); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.moveTo(0, r*0.60); ctx.lineTo(3,0); ctx.lineTo(0,-6); ctx.lineTo(-3,0); ctx.closePath(); ctx.fill();
-
-  // Centre dot
-  ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#b91c1c'; ctx.fill();
-
-  ctx.restore();
-}
-
-// ── Legacy compass (kept for 3D module compatibility) ───────────
-function drawCompass(ctx, cx, cy, r, facing) {
-  _drawCompassArch(ctx, cx, cy, r, facing);
+  if (lbl) lbl.textContent = `FLOOR PLAN · ${plot.bhk_type} · ${plot.width}×${plot.height}ft${shapeLbl[layout.plot_shape]||''}`;
 }
 
 function rRect(ctx, x, y, w, h, r) {
@@ -930,6 +826,35 @@ function rRect(ctx, x, y, w, h, r) {
   ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
   ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
   ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+}
+
+function drawCompass(ctx, cx, cy, r, facing) {
+  const dirs = { North:0, East:90, South:180, West:270 };
+  const a = (dirs[facing] || 0) * Math.PI / 180;
+  ctx.save(); ctx.translate(cx, cy);
+
+  // Outer ring
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(56,189,248,0.2)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = 'rgba(2,11,24,0.8)'; ctx.fill();
+
+  // Cardinal letters
+  ['N','E','S','W'].forEach((d, i) => {
+    const da = i * Math.PI / 2;
+    ctx.fillStyle = d === 'N' ? '#f87171' : 'rgba(148,163,184,0.5)';
+    ctx.font = `600 ${r*0.28}px JetBrains Mono`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(d, Math.sin(da)*(r*0.65), -Math.cos(da)*(r*0.65));
+  });
+
+  // Needle
+  ctx.rotate(a);
+  ctx.fillStyle = '#f87171';
+  ctx.beginPath(); ctx.moveTo(0,-(r*0.55)); ctx.lineTo(3,0); ctx.lineTo(0,5); ctx.lineTo(-3,0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(148,163,184,0.35)';
+  ctx.beginPath(); ctx.moveTo(0,r*0.55); ctx.lineTo(2.5,0); ctx.lineTo(0,-5); ctx.lineTo(-2.5,0); ctx.closePath(); ctx.fill();
+
+  ctx.restore();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -963,6 +888,7 @@ function render3D(layout) {
 
   build3DScene(scene, layout);
 
+  // Orbit
   let drag = false, px = 0, py = 0, theta = 0.7, phi = 0.75;
   const tgt = new THREE.Vector3(plot.width / 2, 0, plot.height / 2);
 
@@ -985,6 +911,7 @@ function render3D(layout) {
     px = e.clientX; py = e.clientY; updateCam();
   });
   canvas.addEventListener('wheel', e => {
+    const newR2 = R; // keep reference
     phi = Math.max(0.1, Math.min(1.5, phi + e.deltaY * 0.002));
     updateCam(); e.preventDefault();
   }, { passive: false });
@@ -996,6 +923,7 @@ function render3D(layout) {
 function build3DScene(scene, layout) {
   const plot = layout.plot || { width: 40, height: 60 };
 
+  // Floor
   const floorG = new THREE.PlaneGeometry(plot.width + 12, plot.height + 12);
   const floorM = new THREE.MeshLambertMaterial({ color: 0x040f1f });
   const floor  = new THREE.Mesh(floorG, floorM);
@@ -1003,9 +931,11 @@ function build3DScene(scene, layout) {
   floor.position.set(plot.width / 2, -0.1, plot.height / 2);
   floor.receiveShadow = true; scene.add(floor);
 
+  // Grid
   const grid = new THREE.GridHelper(Math.max(plot.width, plot.height) * 2.5, 50, 0x071529, 0x071529);
   grid.position.set(plot.width / 2, 0.02, plot.height / 2); scene.add(grid);
 
+  // Lights
   scene.add(new THREE.AmbientLight(0x334155, 0.9));
   const sun = new THREE.DirectionalLight(0xffffff, 1.2);
   sun.position.set(plot.width * 1.5, plot.height * 2, plot.height * 1.2);
@@ -1015,6 +945,7 @@ function build3DScene(scene, layout) {
   const warm = new THREE.PointLight(0xc9962a, 0.4, 200);
   warm.position.set(plot.width, 30, plot.height); scene.add(warm);
 
+  // Rooms
   const wallH = 9;
   layout.rooms.forEach(r => {
     const c   = COLORS[r.type] || C_DEF;
@@ -1025,10 +956,12 @@ function build3DScene(scene, layout) {
     mesh.position.set(r.x + rw / 2, wallH / 2, r.y + rh / 2);
     mesh.castShadow = true; mesh.receiveShadow = true; scene.add(mesh);
 
+    // Edges
     const eMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07 });
     scene.add(Object.assign(new THREE.LineSegments(new THREE.EdgesGeometry(geo), eMat),
       { position: mesh.position.clone() }));
 
+    // Roof slab (transparent)
     const topG = new THREE.PlaneGeometry(rw * 0.94, rh * 0.94);
     const topM = new THREE.MeshLambertMaterial({ color: c.hex, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
     const top  = new THREE.Mesh(topG, topM);
@@ -1037,6 +970,7 @@ function build3DScene(scene, layout) {
     scene.add(top);
   });
 
+  // Plot boundary (wireframe)
   const bGeo = new THREE.BoxGeometry(plot.width, 0.5, plot.height);
   const bMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.1, wireframe: true });
   const boundary = new THREE.Mesh(bGeo, bMat);
@@ -1059,25 +993,31 @@ function switchView(v) {
 // ═══════════════════════════════════════════════════════════════
 function renderVastu(layout) {
   const score = layout.vastu_score || 0;
-  const arc   = document.getElementById('score-arc');
-  const circ  = 345.4;
-  arc.style.strokeDashoffset = (circ - (score / 100) * circ).toString();
-  document.getElementById('score-num').textContent     = Math.round(score);
-  document.getElementById('score-pct-label').textContent = '/ 100';
-  document.getElementById('ms-fitness').textContent    = (layout.fitness || 0).toFixed(3);
-  document.getElementById('ms-util').innerHTML         = `${Math.round(layout.space_util || 0)}<span class="unit">%</span>`;
 
-  const rules     = layout.vastu_rules || [];
+  // Ring animation
+  const arc  = document.getElementById('score-arc');
+  const circ = 345.4;
+  arc.style.strokeDashoffset = (circ - (score / 100) * circ).toString();
+
+  document.getElementById('score-num').textContent = Math.round(score);
+  document.getElementById('score-pct-label').textContent = '/ 100';
+
+  // Mini stats
+  document.getElementById('ms-fitness').textContent = (layout.fitness || 0).toFixed(3);
+  document.getElementById('ms-util').innerHTML    = `${Math.round(layout.space_util || 0)}<span class="unit">%</span>`;
+
+  // Rules
+  const rules = layout.vastu_rules || [];
   const container = document.getElementById('vastu-rules');
   if (!rules.length) {
     container.innerHTML = '<div style="font-family:var(--ff-mono);font-size:0.7rem;color:var(--slate-600);padding:0.5rem">No rule data available</div>';
     return;
   }
 
-  const icons = { Kitchen:'🍳', Master:'🛏', Living:'🛋', Pooja:'🪔', Bathroom:'🚿', Dining:'🍽', Entrance:'🚪' };
+  const icons = { Kitchen:'🍳', Master:'🛏', Living:'🛋', Pooja:'🪔', Bathroom:'🚿', Dining:'🍽', Entrance:'🚪', Balcony:'🌿' };
   container.innerHTML = rules.map(r => {
-    const icon  = Object.entries(icons).find(([k]) => r.label.includes(k))?.[1] || '🏠';
-    const cls   = r.status === 'compliant' ? 'vr-ok' : r.status === 'partial' ? 'vr-warn' : r.status === 'missing' ? 'vr-miss' : 'vr-bad';
+    const icon = Object.entries(icons).find(([k]) => r.label.includes(k))?.[1] || '🏠';
+    const cls  = r.status === 'compliant' ? 'vr-ok' : r.status === 'partial' ? 'vr-warn' : r.status === 'missing' ? 'vr-miss' : 'vr-bad';
     const badge = r.status === 'compliant' ? '✓ OK' : r.status === 'partial' ? '~ Fair' : r.status === 'missing' ? '- N/A' : '✗ Fail';
     return `<div class="vastu-rule">
       <span class="vr-icon">${icon}</span>
@@ -1094,7 +1034,7 @@ function renderVastu(layout) {
 // LEGEND
 // ═══════════════════════════════════════════════════════════════
 function renderLegend(layout) {
-  const seen  = new Set();
+  const seen = new Set();
   const items = layout.rooms
     .filter(r => { if (seen.has(r.type)) return false; seen.add(r.type); return true; })
     .map(r => {
@@ -1121,15 +1061,17 @@ function updateResults() {
   document.getElementById('r-sub').textContent =
     `Layout ID: ${l.layout_id || '—'} · Generated via ${l.layout_id?.startsWith('demo') ? 'Demo Mode' : 'Flask GA Engine'}`;
 
-  document.getElementById('r-plot').textContent   = `${p.width||'—'}×${p.height||'—'}`;
-  document.getElementById('r-bhk').textContent    = p.bhk_type || '—';
-  document.getElementById('r-facing').textContent = p.facing || '—';
-  document.getElementById('r-vscore').innerHTML   = `${Math.round(l.vastu_score||0)}<span class="kpi-unit">%</span>`;
-  document.getElementById('r-rooms').textContent  = l.rooms?.length || '—';
-  document.getElementById('r-area').innerHTML     = `${((p.width||0)*(p.height||0)).toLocaleString()}<span class="kpi-unit">sqft</span>`;
-  document.getElementById('r-util').innerHTML     = `${Math.round(l.space_util||0)}<span class="kpi-unit">%</span>`;
-  document.getElementById('r-fit').textContent    = (l.fitness||0).toFixed(4);
+  // KPIs
+  document.getElementById('r-plot').textContent    = `${p.width||'—'}×${p.height||'—'}`;
+  document.getElementById('r-bhk').textContent     = p.bhk_type || '—';
+  document.getElementById('r-facing').textContent  = p.facing || '—';
+  document.getElementById('r-vscore').innerHTML    = `${Math.round(l.vastu_score||0)}<span class="kpi-unit">%</span>`;
+  document.getElementById('r-rooms').textContent   = l.rooms?.length || '—';
+  document.getElementById('r-area').innerHTML      = `${((p.width||0)*(p.height||0)).toLocaleString()}<span class="kpi-unit">sqft</span>`;
+  document.getElementById('r-util').innerHTML      = `${Math.round(l.space_util||0)}<span class="kpi-unit">%</span>`;
+  document.getElementById('r-fit').textContent     = (l.fitness||0).toFixed(4);
 
+  // Breakdown bars
   const bars = document.getElementById('breakdown-bars');
   bars.innerHTML = (l.vastu_rules || []).map(r => {
     const pct = r.weight > 0 ? Math.round((r.earned / r.weight) * 100) : 0;
@@ -1141,6 +1083,7 @@ function updateResults() {
     </div>`;
   }).join('');
 
+  // Room table
   const tbody = document.getElementById('room-table-body');
   tbody.innerHTML = (l.rooms || []).map(r => `
     <tr>
@@ -1154,42 +1097,61 @@ function updateResults() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AR MODULE BRIDGE
+// AR MODULE BRIDGE  — delegates to ARViewer (ar.js)
 // ═══════════════════════════════════════════════════════════════
+
+/**
+ * Called by navigate('ar').
+ * Shows/hides the empty state, then hands off to ARViewer.init().
+ */
 function initAR() {
   if (!activeLayout) {
-    document.getElementById('ar-empty').style.display       = 'block';
+    document.getElementById('ar-empty').style.display      = 'block';
     document.getElementById('ar-viewer-wrap').style.display = 'none';
     return;
   }
-  document.getElementById('ar-empty').style.display       = 'none';
+  document.getElementById('ar-empty').style.display      = 'none';
   document.getElementById('ar-viewer-wrap').style.display = 'block';
+
+  // Destroy previous instance (if any) then re-init
   if (typeof ARViewer !== 'undefined') {
     ARViewer.destroy();
     ARViewer.init(activeLayout);
   }
 }
 
-function arReset()      { ARViewer?.reset();           }
-function arWireframe()  { ARViewer?.toggleWireframe(); }
-function arTop()        { ARViewer?.setTop();          }
-function arFullscreen() { ARViewer?.fullscreen();      }
+/* Legacy shim functions — kept so any existing onclick="arXxx()" calls still work */
+function arReset()      { ARViewer?.reset();            }
+function arWireframe()  { ARViewer?.toggleWireframe();  }
+function arTop()        { ARViewer?.setTop();           }
+function arFullscreen() { ARViewer?.fullscreen();       }
 
 // ═══════════════════════════════════════════════════════════════
 // PDF EXPORT
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// PDF EXPORT  — delegates to PDFExporter module (pdf.js)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Opens the PDF preview & export modal.
+ * Called by all "Export PDF" buttons in the UI.
+ * PDFExporter internally tries the Flask backend first,
+ * then falls back to client-side jsPDF generation.
+ */
 async function exportPDF() {
-  if (!activeLayout || !window.activeLayout) {
-    showToast('⚠ Generate a floor plan first.', '⚠');
+  if (!activeLayout) {
+    showToast('⚠ Generate a floor plan first', '⚠');
     return;
   }
-
+  window.activeLayout = activeLayout;   // pdf.js reads window.activeLayout
   if (typeof PDFExporter !== 'undefined') {
-    PDFExporter.open(window.activeLayout);
+    PDFExporter.open();
   } else {
     showToast('⚠ PDF module not loaded', '⚠');
   }
 }
+
 // ═══════════════════════════════════════════════════════════════
 // LOADING OVERLAY
 // ═══════════════════════════════════════════════════════════════
@@ -1215,12 +1177,15 @@ function showToast(msg, icon = '✦') {
 // ═══════════════════════════════════════════════════════════════
 window.addEventListener('load', () => {
   checkAPI();
+  // Auto-generate demo plan so UI is populated on load
   setTimeout(() => {
+    // Generate 3 demo layouts with different templates
     const l0 = buildLocalPlan('40x60', '2BHK', 'East', 0);
     const l1 = buildLocalPlan('40x60', '2BHK', 'East', 1);
     const l2 = buildLocalPlan('40x60', '2BHK', 'East', 2);
     currentLayouts  = [l0, l1, l2];
     activeLayout    = l0;
+    window.activeLayout = activeLayout;   // expose to pdf.js
     activeLayoutIdx = 0;
     renderUI(0);
     updateResults();
@@ -1230,6 +1195,7 @@ window.addEventListener('load', () => {
   }, 600);
 });
 
+// Re-render 2D on resize
 window.addEventListener('resize', () => {
   if (activeLayout) render2D(activeLayout);
 });
@@ -1242,20 +1208,36 @@ function toggleTheme() {
   const btn     = document.getElementById('theme-toggle');
   const current = html.getAttribute('data-theme') || 'dark';
   const next    = current === 'dark' ? 'light' : 'dark';
+
   html.setAttribute('data-theme', next);
   localStorage.setItem('intelliplan-theme', next);
-  if (btn) btn.setAttribute('data-tooltip', next === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode');
-  if (activeLayout) setTimeout(() => render2D(activeLayout), 380);
-  showToast(next === 'light' ? '☀ Light mode' : '◐ Dark mode', next === 'light' ? '☀' : '◐');
+
+  if (btn) {
+    btn.setAttribute('data-tooltip',
+      next === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode');
+  }
+
+  // Re-render 2D canvas with updated colors after transition settles
+  if (activeLayout) {
+    setTimeout(() => render2D(activeLayout), 380);
+  }
+
+  showToast(next === 'light' ? '☀ Light mode' : '◐ Dark mode',
+            next === 'light' ? '☀' : '◐');
 }
 
+// Apply saved theme on load (runs before DOMContentLoaded completes)
 (function applySavedTheme() {
   const saved = localStorage.getItem('intelliplan-theme');
   if (saved) {
     document.documentElement.setAttribute('data-theme', saved);
+    // Update tooltip when DOM is ready
     window.addEventListener('DOMContentLoaded', () => {
       const btn = document.getElementById('theme-toggle');
-      if (btn) btn.setAttribute('data-tooltip', saved === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode');
+      if (btn) {
+        btn.setAttribute('data-tooltip',
+          saved === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode');
+      }
     });
   }
 })();
