@@ -1,4 +1,4 @@
-<img width="1468" height="448" alt="image" src="https://github.com/user-attachments/assets/24b992e3-50ca-4176-b407-24195ed306b0" /># IntelliPlan-3D 🏠  
+# IntelliPlan-3D 🏠  
 AI-Based 2D-3D Floor Plan Recommendation System with Augmented Reality
 
 ---
@@ -38,7 +38,7 @@ IntelliPlan-3D solves these problems by:
 
 ---
 
-## Objectives
+## Objectives 📌
 
 - Design an AI-based system for floor plan generation
 - Provide both 2D and 3D outputs
@@ -48,14 +48,14 @@ IntelliPlan-3D solves these problems by:
 
 ---
 
-## System Architecture
+## System Architecture 🏗️
 
 <img width="1818" height="1088" alt="Image" src="https://github.com/user-attachments/assets/d39c2888-a0fd-45fc-9942-5b3c77a015c9" />
 
 
 ---
 
-## Project Structure
+## Project Structure 📂
 
 ```
 IntelliPlan-3D/
@@ -90,29 +90,39 @@ IntelliPlan-3D/
 ```
 
 ---
-## Tech Stack
 
-Programming Language: Python is used for backend development and algorithm implementation.
+## Tech Stack 🛠️
 
-Backend Framework: FastAPI is used to handle API requests and connect the frontend with the backend.
+- Programming Language 🐍  
+  Python is used for backend development and algorithm implementation.
 
-Frontend Technologies: HTML, CSS, and JavaScript are used to design the user interface and manage user interaction.
+- Backend Framework ⚡  
+  FastAPI is used to handle API requests and connect the frontend with the backend.
 
-Development Environment: Visual Studio Code is used for coding, debugging, and overall project management.
+- Frontend Technologies 🎨  
+  HTML, CSS, and JavaScript are used to design the user interface and manage user interaction.
 
-Libraries: NumPy and Matplotlib are used for data processing and visualization tasks.
+- Development Environment 💻  
+  Visual Studio Code is used for coding, debugging, and project management.
 
-Visualization Tools: 2D graphics and 3D rendering tools are used to display floor plans in visual formats.
+- Libraries 📚  
+  NumPy and Matplotlib are used for data processing and visualization.
 
-Version Control: Git is used for code management and tracking changes during development.
+- Visualization Tools 🧱  
+  2D graphics and 3D rendering tools are used to display floor plans.
 
-Operating System: Windows is used as the platform for development and execution.
+- Version Control 🔄  
+  Git is used for code management and tracking changes.
 
-Browser: Google Chrome is used to run and test the web application.
+- Operating System 🖥️  
+  Windows is used for development and execution.
+
+- Browser 🌐  
+  Google Chrome is used to run and test the web application.
 
 ---
 
-## How It Works
+## How It Works ⚙️
 
 1. User enters input details  
 2. System processes inputs using AI algorithms  
@@ -122,7 +132,7 @@ Browser: Google Chrome is used to run and test the web application.
 
 ---
 
-## Advantages
+## Advantages ✅
 
 - Saves time and cost  
 - Reduces human errors  
@@ -132,7 +142,7 @@ Browser: Google Chrome is used to run and test the web application.
 
 ---
 
-## Future Scope
+## Future Scope 🔮
 
 1. Support for complex plot shapes  
 2. Advanced customization and user control  
@@ -142,7 +152,7 @@ Browser: Google Chrome is used to run and test the web application.
 
 ---
 
-## Team Members
+## Team Members 👥
 
 - Mayur Bhong  
 - Kartik Mathpati 
@@ -150,6 +160,6 @@ Browser: Google Chrome is used to run and test the web application.
 
 ---
 
-## Acknowledgment
+## Acknowledgment 🙏
 
 We thank our faculty and mentors for guidance and support in completing this project.
