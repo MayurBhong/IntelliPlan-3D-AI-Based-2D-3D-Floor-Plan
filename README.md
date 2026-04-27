@@ -55,34 +55,60 @@ IntelliPlan-3D solves these problems by:
 
 ---
 
+## Project Structure
+
+```
+IntelliPlan-3D/
+│
+├── backend/
+│   ├── app.py                # Main backend application
+│   ├── config.py             # Configuration settings
+│   ├── analytics.py          # Analysis and evaluation logic
+│   ├── check_accuracy.py     # Accuracy testing module
+│   ├── requirements.txt      # Backend dependencies
+│   ├── .env.example          # Environment variables template
+│   │
+│   ├── ga_engine/            # Genetic Algorithm logic
+│   ├── vastu_engine/         # Vastu rule processing
+│   ├── geometry/             # Layout calculations and geometry logic
+│   ├── services/             # Core service layer
+│   ├── utils/                # Utility functions
+│   │
+│   ├── test_ga_engine.py     # GA engine tests
+│   ├── test_geometry.py      # Geometry tests
+│   └── test_vastu_engine.py  # Vastu engine tests
+│
+├── frontend/
+│   ├── index.html            # Main UI page
+│   ├── styles.css            # Styling
+│   ├── script.js             # Frontend logic
+│   ├── ar.js                 # Augmented Reality features
+│   └── pdf.js                # PDF generation
+│
+├── README.md                 # Project documentation
+└── .gitignore                # Git ignore rules
+```
+
+---
 ## Tech Stack
 
-Programming Language  
-Python is used for backend development and algorithm implementation.
+Programming Language: Python is used for backend development and algorithm implementation.
 
-Backend Framework  
-FastAPI is used to handle API requests and connect the frontend with the backend.
+Backend Framework: FastAPI is used to handle API requests and connect the frontend with the backend.
 
-Frontend Technologies  
-HTML, CSS, and JavaScript are used to design the user interface and manage user interaction.
+Frontend Technologies: HTML, CSS, and JavaScript are used to design the user interface and manage user interaction.
 
-Development Environment  
-Visual Studio Code is used for coding, debugging, and overall project management.
+Development Environment: Visual Studio Code is used for coding, debugging, and overall project management.
 
-Libraries  
-NumPy and Matplotlib are used for data processing and visualization tasks.
+Libraries: NumPy and Matplotlib are used for data processing and visualization tasks.
 
-Visualization Tools  
-2D graphics and 3D rendering tools are used to display floor plans in visual formats.
+Visualization Tools: 2D graphics and 3D rendering tools are used to display floor plans in visual formats.
 
-Version Control  
-Git is used for code management and tracking changes during development.
+Version Control: Git is used for code management and tracking changes during development.
 
-Operating System  
-Windows is used as the platform for development and execution.
+Operating System: Windows is used as the platform for development and execution.
 
-Browser  
-Google Chrome is used to run and test the web application.
+Browser: Google Chrome is used to run and test the web application.
 
 ---
 
