@@ -108,12 +108,22 @@ Google Chrome is used to run and test the web application.
 
 ## Future Scope
 
-- Voice-based input system  
-- Interior design recommendations  
-- Furniture auto-placement  
-- Cloud-based collaboration  
-- Mobile application integration  
+1. Support for complex plot shapes  
+2. Advanced customization and user control  
+3. Improved AI and optimization  
+4. Integration of construction rules and planning  
+5. Enhanced visualization and user experience  
 
 ---
 
-## Installation
+## Team Members
+
+- Mayur Bhong  
+- Kartik Mathpati 
+- Mansi Bang
+
+---
+
+## Acknowledgment
+
+We thank our faculty and mentors for guidance and support in completing this project.
