@@ -1,15 +1,15 @@
-# IntelliPlan-3D  
+<img width="1468" height="448" alt="image" src="https://github.com/user-attachments/assets/24b992e3-50ca-4176-b407-24195ed306b0" /># IntelliPlan-3D 🏠  
 AI-Based 2D-3D Floor Plan Recommendation System with Augmented Reality
 
 ---
 
-## Overview
+## Overview 📖
 
 IntelliPlan-3D is an intelligent system that automates residential floor plan design using Artificial Intelligence. It allows users to generate optimized 2D and 3D floor plans based on simple inputs such as plot size, number of rooms, and user preferences. The system removes the need for manual drafting and reduces dependency on professional architects for basic planning. It focuses on efficient space utilization, logical room placement, and real-world usability. It also integrates Augmented Reality to help users visualize generated floor plans in a more interactive way.
 
 ---
 
-## Key Features
+## Key Features 🚀
 
 - Automatic 2D floor plan generation
 - 3D visualization of layouts
@@ -22,7 +22,7 @@ IntelliPlan-3D is an intelligent system that automates residential floor plan de
 
 ---
 
-## Motivation
+## Motivation 🎯
 
 - Traditional floor planning is time-consuming and expensive
 - Requires professional knowledge and repeated revisions
