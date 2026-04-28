@@ -37,7 +37,7 @@
     </div>
   </div>
 
-  <nav>
+<nav id="main-nav">
     <button class="nav-btn active" id="nav-landing" onclick="goToLanding()">Home</button>
     <button class="nav-btn" id="nav-home" onclick="goToStudio()">Studio</button>
     <button class="nav-btn" id="nav-results" onclick="navigate('results')">Results</button>
@@ -48,6 +48,18 @@
     <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
   </button>
+  <!-- Hamburger (mobile only) -->
+  <button class="hamburger" id="hamburger"
+          onclick="toggleMobileNav()"
+          aria-label="Toggle navigation"
+          aria-expanded="false">
+    <span class="ham-line"></span>
+    <span class="ham-line"></span>
+    <span class="ham-line"></span>
+  </button>
+
+  <div class="mob-nav-backdrop" id="mob-nav-backdrop" onclick="closeMobileNav()"></div>
+
 </header>
 
 <!-- ═══════════════════════════════════════════════════════
@@ -57,38 +69,63 @@
 
   <!-- ── HERO ─────────────────────────────────────────── -->
   <section class="lp-hero">
+    <!-- Background glows -->
     <div class="lp-hero-glow lp-glow-1"></div>
     <div class="lp-hero-glow lp-glow-2"></div>
     <div class="lp-hero-glow lp-glow-3"></div>
 
     <div class="lp-hero-inner">
-      <!-- Left: Text -->
+
+      <!-- ══ LEFT: Content ══ -->
       <div class="lp-hero-left">
+
+        <!-- Eyebrow label -->
         <div class="lp-eyebrow">
-          <span class="lp-eyebrow-dot"></span>
+          <span class="lp-eyebrow-pulse"></span>
           Vastu-Compliant AI Architecture
-          <span class="lp-eyebrow-dot"></span>
         </div>
+
+        <!-- Main heading -->
         <h1 class="lp-h1">
           Design Your<br/>
           <em>Dream Home</em><br/>
           <span class="lp-h1-sub">with Intelligence</span>
         </h1>
+
+        <!-- Description -->
         <p class="lp-sub">
-          Genetic algorithm–powered floor plan generation with Vastu Shastra compliance scoring. Get 2D blueprints, 3D walkthroughs, and AR previews in seconds for any plot size.
+          Genetic algorithm–powered floor plan generation with Vastu compliance scoring.
+          Get 2D blueprints, 3D walkthroughs, and AR previews in seconds for any plot size.
         </p>
-        <div class="lp-hero-badges">
-          <div class="lp-badge"><span class="lp-badge-num">8+</span><span class="lp-badge-label">Vastu Rules</span></div>
-          <div class="lp-badge-sep"></div>
-          <div class="lp-badge"><span class="lp-badge-num">3</span><span class="lp-badge-label">AI Layouts</span></div>
-          <div class="lp-badge-sep"></div>
-          <div class="lp-badge"><span class="lp-badge-num">3D</span><span class="lp-badge-label">+ AR View</span></div>
+
+        <!-- Stats row -->
+        <div class="lp-stats-row">
+          <div class="lp-stat-item">
+            <span class="lp-stat-num">8<span class="lp-stat-accent">+</span></span>
+            <span class="lp-stat-label">Vastu Rules</span>
+          </div>
+          <div class="lp-stat-divider"></div>
+          <div class="lp-stat-item">
+            <span class="lp-stat-num">3</span>
+            <span class="lp-stat-label">AI Layouts</span>
+          </div>
+          <div class="lp-stat-divider"></div>
+          <div class="lp-stat-item">
+            <span class="lp-stat-num">3D</span>
+            <span class="lp-stat-label">+ AR View</span>
+          </div>
         </div>
+
+        <!-- CTA -->
         <button class="lp-cta-btn" onclick="goToStudio()">
           <span class="lp-cta-icon">✦</span>
           Start Floor Plan
-          <svg class="lp-cta-arrow" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="lp-cta-arrow" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
+
+        <!-- Trust strip -->
         <div class="lp-trust">
           <span class="lp-trust-text">Powered by GA Engine</span>
           <span class="lp-trust-sep">·</span>
@@ -96,12 +133,28 @@
           <span class="lp-trust-sep">·</span>
           <span class="lp-trust-text">Free to use</span>
         </div>
-      </div>
 
-      <!-- Right: Floor Plan Illustration -->
+      </div><!-- /.lp-hero-left -->
+
+      <!-- ══ RIGHT: Floor plan image ══ -->
       <div class="lp-hero-right">
         <div class="lp-floorplan-wrap">
-          <div class="lp-fp-badge">LIVE PREVIEW</div>
+
+          <!-- Corner marks -->
+          <span class="lp-fp-corner lp-fp-corner--tl"></span>
+          <span class="lp-fp-corner lp-fp-corner--tr"></span>
+          <span class="lp-fp-corner lp-fp-corner--bl"></span>
+          <span class="lp-fp-corner lp-fp-corner--br"></span>
+
+          <div class="lp-fp-header">
+            <span class="lp-fp-dot"></span>
+            <span class="lp-fp-badge-text">LIVE PREVIEW</span>
+            <span class="lp-fp-meta">2D Floor Plan · 3BHK</span>
+          </div>
+
+          <!-- ═══════════════════════════════════════════
+              SVG floor plan — keep exactly as original
+          ════════════════════════════════════════════ -->
           <svg class="lp-fp-svg" viewBox="0 0 340 260" fill="none" xmlns="http://www.w3.org/2000/svg">
             <!-- Grid lines -->
             <defs>
@@ -176,12 +229,19 @@
             <line x1="28" y1="249" x2="28" y2="255" stroke="rgba(201,150,42,0.5)" stroke-width="1.2"/>
             <line x1="79" y1="249" x2="79" y2="255" stroke="rgba(201,150,42,0.5)" stroke-width="1.2"/>
             <text x="53" y="260" text-anchor="middle" fill="rgba(201,150,42,0.6)" font-size="7" font-family="JetBrains Mono,monospace">10 FT</text>
-            <!-- Label -->
             <text x="28" y="18" fill="rgba(56,189,248,0.5)" font-size="7" font-family="JetBrains Mono,monospace">FLOOR PLAN · 3BHK · 40×60 ft</text>
           </svg>
-        </div>
-      </div>
-    </div>
+
+          <!-- Floating room count badge -->
+          <div class="lp-fp-rooms-badge">
+            <span class="lp-fp-rooms-num">8</span>
+            <span class="lp-fp-rooms-label">Rooms</span>
+          </div>
+
+        </div><!-- /.lp-floorplan-wrap -->
+      </div><!-- /.lp-hero-right -->
+
+    </div><!-- /.lp-hero-inner -->
   </section>
 
   <!-- ── KEY FEATURES INTRO ─────────────────────────── -->
@@ -1014,7 +1074,7 @@
   </div>
   <footer>
     <div class="logo-name" style="font-size:0.9rem;font-family:var(--ff-display);cursor:pointer" onclick="goToLanding()">IntelliPlan<span style="color:var(--gold-400)">·3D</span></div>
-    <div class="footer-copy">© 2025 IntelliPlan·3D</div>
+    <div class="footer-copy">© 2026 IntelliPlan·3D</div>
   </footer>
 </div>
 
@@ -1070,62 +1130,65 @@
         </div>
 
         <!-- ── Right: Keyboard Shortcuts Sidebar ── -->
-        <div class="ar-shortcuts-sidebar">
-          <div class="ar-sc-header">
+        <div class="ar-shortcuts-sidebar" id="ar-shortcuts-sidebar">
+          <div class="ar-sc-header" onclick="toggleARShortcuts()" role="button" aria-expanded="false" id="ar-sc-header-btn">
             <span class="ar-sc-icon">⌨</span>
             <span class="ar-sc-title">Keyboard Shortcuts</span>
+            <span class="ar-sc-chevron" id="ar-sc-chevron">▼</span>
           </div>
 
-          <div class="ar-sc-section">
-            <div class="ar-sc-section-label">Camera</div>
-            <div class="ar-sc-row"><kbd>R</kbd><span>Reset camera</span></div>
-            <div class="ar-sc-row"><kbd>T</kbd><span>Top view</span></div>
-            <div class="ar-sc-row"><kbd>I</kbd><span>Isometric view</span></div>
-            <div class="ar-sc-row"><kbd>O</kbd><span>Orbit view</span></div>
-          </div>
+          <div class="ar-sc-body" id="ar-sc-body">
+            <div class="ar-sc-section">
+              <div class="ar-sc-section-label">Camera</div>
+              <div class="ar-sc-row"><kbd>R</kbd><span>Reset camera</span></div>
+              <div class="ar-sc-row"><kbd>T</kbd><span>Top view</span></div>
+              <div class="ar-sc-row"><kbd>I</kbd><span>Isometric view</span></div>
+              <div class="ar-sc-row"><kbd>O</kbd><span>Orbit view</span></div>
+            </div>
 
-          <div class="ar-sc-divider"></div>
+            <div class="ar-sc-divider"></div>
 
-          <div class="ar-sc-section">
-            <div class="ar-sc-section-label">Scene</div>
-            <div class="ar-sc-row"><kbd>W</kbd><span>Wireframe toggle</span></div>
-            <div class="ar-sc-row"><kbd>E</kbd><span>Explode view</span></div>
-          </div>
+            <div class="ar-sc-section">
+              <div class="ar-sc-section-label">Scene</div>
+              <div class="ar-sc-row"><kbd>W</kbd><span>Wireframe toggle</span></div>
+              <div class="ar-sc-row"><kbd>E</kbd><span>Explode view</span></div>
+            </div>
 
-          <div class="ar-sc-divider"></div>
+            <div class="ar-sc-divider"></div>
 
-          <div class="ar-sc-section">
-            <div class="ar-sc-section-label">Lighting</div>
-            <div class="ar-sc-row"><kbd>1</kbd><span>☀ Day mode</span></div>
-            <div class="ar-sc-row"><kbd>2</kbd><span>🌅 Dusk mode</span></div>
-            <div class="ar-sc-row"><kbd>3</kbd><span>🌙 Night mode</span></div>
-          </div>
+            <div class="ar-sc-section">
+              <div class="ar-sc-section-label">Lighting</div>
+              <div class="ar-sc-row"><kbd>1</kbd><span>☀ Day mode</span></div>
+              <div class="ar-sc-row"><kbd>2</kbd><span>🌅 Dusk mode</span></div>
+              <div class="ar-sc-row"><kbd>3</kbd><span>🌙 Night mode</span></div>
+            </div>
 
-          <div class="ar-sc-divider"></div>
+            <div class="ar-sc-divider"></div>
 
-          <div class="ar-sc-section">
-            <div class="ar-sc-section-label">Utilities</div>
-            <div class="ar-sc-row"><kbd>S</kbd><span>Screenshot</span></div>
-            <div class="ar-sc-row"><kbd>F</kbd><span>Fullscreen</span></div>
-            <div class="ar-sc-row"><kbd>Esc</kbd><span>Close panels</span></div>
-          </div>
+            <div class="ar-sc-section">
+              <div class="ar-sc-section-label">Utilities</div>
+              <div class="ar-sc-row"><kbd>S</kbd><span>Screenshot</span></div>
+              <div class="ar-sc-row"><kbd>F</kbd><span>Fullscreen</span></div>
+              <div class="ar-sc-row"><kbd>Esc</kbd><span>Close panels</span></div>
+            </div>
 
-          <div class="ar-sc-divider"></div>
+            <div class="ar-sc-divider"></div>
 
-          <div class="ar-sc-section">
-            <div class="ar-sc-section-label">Mouse / Touch</div>
-            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Drag</span><span>Orbit</span></div>
-            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Scroll</span><span>Zoom</span></div>
-            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Right</span><span>Pan</span></div>
-            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">👆 Dbl-tap</span><span>Room details</span></div>
-            <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🤌 Pinch</span><span>Zoom (touch)</span></div>
-          </div>
+            <div class="ar-sc-section">
+              <div class="ar-sc-section-label">Mouse / Touch</div>
+              <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Drag</span><span>Orbit</span></div>
+              <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Scroll</span><span>Zoom</span></div>
+              <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🖱 Right</span><span>Pan</span></div>
+              <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">👆 Dbl-tap</span><span>Room details</span></div>
+              <div class="ar-sc-row ar-sc-mouse"><span class="ar-sc-mouse-icon">🤌 Pinch</span><span>Zoom (touch)</span></div>
+            </div>
 
-          <div class="ar-sc-tip">
-            <span class="ar-sc-tip-icon">💡</span>
-            Rooms auto-spin on load. Any interaction pauses spin.
-          </div>
-        </div>
+            <div class="ar-sc-tip">
+              <span class="ar-sc-tip-icon">💡</span>
+              Rooms auto-spin on load. Any interaction pauses spin.
+            </div>
+          </div><!-- /.ar-sc-body -->
+        </div><!-- /.ar-shortcuts-sidebar -->
 
       </div><!-- /.ar-layout-grid -->
     </div>

@@ -237,7 +237,6 @@ async function generatePlan() {
     window.activeLayout = activeLayout;   // expose to pdf.js
     renderUI(0);
     updateResults();
-    showToast(`⚠ API offline — showing demo plan`, '⚠');
   } finally {
     clearInterval(loadInt);
     showLoadingOverlay(false);
@@ -245,6 +244,25 @@ async function generatePlan() {
     txt.innerHTML = '✦ Generate AI Layout';
   }
 }
+
+
+function toggleARShortcuts() {
+  // Only active on mobile/tablet (sidebar stacked)
+  if (window.innerWidth > 900) return;
+
+  const sidebar = document.getElementById('ar-shortcuts-sidebar');
+  const body    = document.getElementById('ar-sc-body');
+  const chevron = document.getElementById('ar-sc-chevron');
+  const btn     = document.getElementById('ar-sc-header-btn');
+
+  const isOpen  = sidebar.classList.contains('ar-sc-expanded');
+
+  sidebar.classList.toggle('ar-sc-expanded', !isOpen);
+  body.classList.toggle('ar-sc-open', !isOpen);
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  if (chevron) chevron.textContent = isOpen ? '▼' : '▲';
+}
+
 
 // ═══════════════════════════════════════════════════════════════
 // LOCAL FALLBACK PLAN (when backend is offline)
@@ -1225,6 +1243,48 @@ function toggleTheme() {
   showToast(next === 'light' ? '☀ Light mode' : '◐ Dark mode',
             next === 'light' ? '☀' : '◐');
 }
+
+// ══════════════════════════════════════════
+// HAMBURGER NAV
+// ══════════════════════════════════════════
+function toggleMobileNav() {
+  const nav      = document.getElementById('main-nav');
+  const ham      = document.getElementById('hamburger');
+  const backdrop = document.getElementById('mob-nav-backdrop');
+  const isOpen   = nav.classList.contains('mob-open');
+  isOpen ? closeMobileNav() : _openMobileNav(nav, ham, backdrop);
+}
+
+function _openMobileNav(nav, ham, backdrop) {
+  nav.classList.add('mob-open');
+  ham.classList.add('ham-open');
+  ham.setAttribute('aria-expanded', 'true');
+  backdrop.classList.add('mob-open');
+  document.body.style.overflow = 'hidden'; // prevent scroll behind
+}
+
+function closeMobileNav() {
+  const nav      = document.getElementById('main-nav');
+  const ham      = document.getElementById('hamburger');
+  const backdrop = document.getElementById('mob-nav-backdrop');
+  if (!nav) return;
+  nav.classList.remove('mob-open');
+  ham.classList.remove('ham-open');
+  ham.setAttribute('aria-expanded', 'false');
+  backdrop.classList.remove('mob-open');
+  document.body.style.overflow = '';
+}
+
+// Auto-close: nav button click on mobile OR resize to desktop
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('main-nav')?.addEventListener('click', e => {
+    if (e.target.classList.contains('nav-btn') && window.innerWidth <= 900)
+      closeMobileNav();
+  });
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) closeMobileNav();
+  });
+});
 
 // Apply saved theme on load (runs before DOMContentLoaded completes)
 (function applySavedTheme() {
